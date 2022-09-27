@@ -164,7 +164,7 @@ class Main(LatentModule):
             self.circleGraphics.setColor((self.circleColour[0],
                                           self.circleColour[1],
                                           self.circleColour[2],
-                                         self.circleColour[3] - self.circleColour[3] * float(i) / self.fadeFrames))
+                                          self.circleColour[3] - self.circleColour[3] * float(i) / self.fadeFrames))
             self.sleep(1.0 / self.framerate)
 
         self.circleGraphics.destroy()
