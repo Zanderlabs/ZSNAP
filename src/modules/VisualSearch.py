@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 
 """
-@author     TSE
+@authors    TSE, AGC, NVJ
 @org        ZLS
-@date       2022-08-25
+@date       2022-09-27
 """
 
 """
@@ -28,6 +28,7 @@ from pylslx import StreamInlet, resolve_stream
 from collections import deque
 from PIL import Image
 import numpy as np
+import pandas as pd
 
 
 # from pylsl import StreamInfo, StreamOutlet,
@@ -44,6 +45,8 @@ class Main(LatentModule):
 
         self.show_cursor = True
         self.show_mask = True
+        self.fill_nans = True
+        self.fill_2much_ratio = 2
 
         # read images for stimuli
         self.waldoimagepath = "./media/waldo/images/"  # image path
@@ -233,10 +236,20 @@ class Main(LatentModule):
             # get enough to decide whether fixation took place
             # sample, timestamp = inlet.pull_sample()
             eg_sample, eg_timestamp = gaze_inlet.pull_chunk(max_samples=fix_frames)
+            if self.fill_nans:
+                if np.isnan(eg_sample).any():
+                    # try to keep bridge the gap
+                    eg_sample = pd.DataFrame(eg_sample).\
+                        fillna(method='ffill', inplace=False, limit=fix_frames//self.fill_2much_ratio).\
+                        fillna(method="bfill", inplace=False, limit=fix_frames//self.fill_2much_ratio).to_numpy()
 
             if self.show_cursor:
                 # calculate the current gaze location
                 if len(eg_sample) > 0:
+                    if np.isnan(eg_sample[-1]).any():
+                        # Ignore nan and go further
+                        continue
+
                     curr_gaze = self.screen2scene((eg_sample[-1][0] + eg_sample[-1][2]) / 2,
                                                   (eg_sample[-1][1] + eg_sample[-1][3]) / 2)
                     # show the current gaze location if required
@@ -253,17 +266,21 @@ class Main(LatentModule):
                 # if skip != 0 and i % skip != 0:
                 #     continue
                 if len(deq) == fix_frames:
+                    # get all non nans from deq
+                    data = [x for x in deq if not np.isnan(x).any()]
+                    if len(data) == 0:
+                        break
                     if mask_array is not None:
                         im_coord = np.array([self.screen2image((x1 + x2) / 2, (y1 + y2) / 2,
                                                                mask_array.shape[1], mask_array.shape[0])
-                                             for (x1, y1, x2, y2) in deq])
+                                             for (x1, y1, x2, y2) in data])
                         # print(sum(mask_array[im_coord[:, 1], im_coord[:, 0]]), " / ", limit * fix_frames)
                         if sum(mask_array[im_coord[:, 1], im_coord[:, 0]]) > limit * fix_frames:
                             print("Fixation found, going to the next task")
                             return True
                     elif scene_coord:
                         sce_coord = np.array([self.screen2scene((x1 + x2) / 2, (y1 + y2) / 2)
-                                              for (x1, y1, x2, y2) in deq])
+                                              for (x1, y1, x2, y2) in data])
                         dists = np.linalg.norm(sce_coord - location, axis=1)
                         # print(np.sum(dists < radius), " / ", limit * fix_frames)
                         if np.sum(dists < radius) > limit * fix_frames:
@@ -271,7 +288,7 @@ class Main(LatentModule):
                             return True
                     else:
                         scr_coord = np.array([((x1 + x2) / 2, (y1 + y2) / 2)
-                                              for (x1, y1, x2, y2) in deq])
+                                              for (x1, y1, x2, y2) in data])
                         dists = np.linalg.norm(scr_coord - location, axis=1)
                         # print(np.sum(dists < radius), " / ", limit * fix_frames)
                         if np.sum(dists < radius) > limit * fix_frames:
