@@ -43,7 +43,7 @@ class Main(LatentModule):
         LatentModule.__init__(self)
 
         self.show_cursor = True
-        self.show_mask = False
+        self.show_mask = True
 
         # read images for stimuli
         self.waldoimagepath = "./media/waldo/images/"  # image path
@@ -403,11 +403,12 @@ class Main(LatentModule):
                           "\nImage covers full scene. "
                           "\nConsider change image %s size" % showthisimage)
                 self.photomarker("image")
-                self.picture(self.waldoimagepath + showthisimage, duration=self.image_time, pos=[0, 0, 0],
-                             scale=[self.scene_ar, 1, 1], color=self.photomarkerColour, block=False)
+                time_before_image = time()
+                img_obj = self.picture(self.waldoimagepath + showthisimage, duration=self.image_time, pos=[0, 0, 0],
+                                       scale=[self.scene_ar, 1, 1], block=False)
                 if self.show_mask:
-                    self.picture(self.waldomaskpath + usethismask, duration=self.image_time, pos=[0, 0, 0],
-                                 scale=[self.scene_ar, 1, 1], color=self.photomarkerColour, block=False)
+                    msk_obj = self.picture(self.waldomaskpath + usethismask, duration=self.image_time, pos=[0, 0, 0],
+                                           scale=[self.scene_ar, 1, 1], color=[1, 1, 1, 0.2], block=False)
 
                 self.wait4fixation(gaze_inlet=inlet, duration=self.fixation_time, max_duration=self.image_time,
                                    mask_array=mask_image_array)
@@ -416,7 +417,12 @@ class Main(LatentModule):
                 if self.show_cursor:
                     self.removeCursor()
 
-                # wait to get the screen updated
+                # wait to get the screen updated and the images to disappear
+                time2wait = max(self.image_time - time() + time_before_image, 0)
+                if time2wait > 0:
+                    img_obj.destroy()
+                    if self.show_mask:
+                        msk_obj.destroy()
                 self.sleep(1.0 / self.framerate)
 
                 # wait before going to the next image
