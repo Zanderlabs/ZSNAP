@@ -42,7 +42,8 @@ class Main(LatentModule):
     def __init__(self):
         LatentModule.__init__(self)
 
-        self.debug = True
+        self.show_cursor = True
+        self.show_mask = False
 
         # read images for stimuli
         self.waldoimagepath = "./media/waldo/images/"  # image path
@@ -62,7 +63,6 @@ class Main(LatentModule):
                             "./media/waldo/ch/ch2_b.png",
                             "./media/waldo/ch/ch3_b.png",
                             "./media/waldo/ch/ch4_b.png"]
-        self.targetduration = 1  # duration on screen
 
         self.moduleName = "VisualSearch"
 
@@ -80,8 +80,10 @@ class Main(LatentModule):
 
         self.pauseafterblocks = 1  # self-paced break after this number of blocks (1 = each)
 
-        self.maxtime = 6  # maximum trial duration in seconds (to skip a trial)
-        self.fixationtime = 1  # time in seconds for a fixation to be concluded
+        self.target_time = 1  # duration on screen
+        self.image_time = 20  # maximum trial duration in seconds (to skip a trial)
+        self.blank_time = [3, 3.5]  # the blank time
+        self.fixation_time = 1  # time in seconds for a fixation to be concluded
 
         self.fontFace = "arial.ttf"  # text font
         self.textScale = .1  # text scale
@@ -92,7 +94,7 @@ class Main(LatentModule):
 
         self.photomarkerColour = (1, 1, 1, 1)  # photomarker colour = full white
         self.photomarkerScale = .1  # photomarker scale = 10%
-        self.photomarkerDuration = 2.15  # photomarker duration in seconds
+        self.photomarker_time = .15  # photomarker duration in seconds
         self.photomarkerPosition = "lr"  # default photomarker position:
         # tl = top left
         # ll = lower left
@@ -103,17 +105,17 @@ class Main(LatentModule):
         self.crossScale = 0.15  # size of the crosshair
         self.crossColour = (.5, .5, .5, 1)  # colour of the crosshair
 
+        self.margin = 0.8
         self.circleTime = [0.5, 0.9]  # duration range in seconds that the crosshair is visible before each block
-        self.circleScale = 0.15  # size of the crosshair
+        self.circleScale = 0.15  # size of the circle
         self.circleColour = (.5, .5, .5, 1)  # colour of the crosshair
-
-        self.blanktime = [1, 1.5]
 
         self.framerate = 600  # in Hz
         self.fadeTime = 0.1  # time that sparkles/tasks take to fade in/out, in seconds
 
         self.currenttrial = 0  # main index for trials
 
+        self.cursor = None
         self.cursorAlpha = 0.4
         self.cursorScale = 0.05
         self.cursorPos = (0, 0, 0)
@@ -140,12 +142,12 @@ class Main(LatentModule):
             bg=self.textBgColour,
             duration='space')
 
-    def circleOn(self, pos=[0, 0]):
+    def circleOn(self, pos=(0, 0)):
         # fading cross in
         self.circleGraphics = self._engine.direct.gui.OnscreenImage.OnscreenImage(
             image='circle.png',
             scale=self.circleScale,
-            pos=pos,
+            pos=[pos[0], 0, pos[1]],
             color=(self.circleColour[0], self.circleColour[1], self.circleColour[2], 0))
         self.circleGraphics.setTransparency(1)
 
@@ -167,10 +169,11 @@ class Main(LatentModule):
 
         self.circleGraphics.destroy()
 
-    def crossOn(self):
+    def crossOn(self, pos=(0, 0)):
         # fading cross in
         self.crossGraphics = self._engine.direct.gui.OnscreenImage.OnscreenImage(
             image='cross.png',
+            pos=[pos[0], 0, pos[1]],
             scale=self.crossScale,
             color=(self.crossColour[0], self.crossColour[1], self.crossColour[2], 0))
         self.crossGraphics.setTransparency(1)
@@ -191,31 +194,95 @@ class Main(LatentModule):
 
         self.crossGraphics.destroy()
 
-    def showCursor(self):
+    def showCursor(self, pos):
+        # Check if this is already an update
+        cursor_update = self.cursor is not None
+
+        if cursor_update:
+            self.cursor.destroy()
+
         # show cursor on top of the screen
         self.cursor = self._engine.direct.gui.OnscreenImage.OnscreenImage(
             image='circle.png',
             scale=self.cursorScale,
-            pos=self.cursorPos)
+            pos=pos)
         self.cursor.setTransparency(1)
 
-        for i in range(self.fadeFrames):
-            self.cursor.setColor((self.cursorColor[0], self.cursorColor[1], self.cursorColor[2],
-                                  self.cursorAlpha * float(i) / self.fadeFrames))
-            self.sleep(1.0 / self.framerate)
-
-    def updateCursor(self):
-        self.cursor.destroy()
-        self.cursor = self._engine.direct.gui.OnscreenImage.OnscreenImage(
-            image='circle.png',
-            scale=self.cursorScale,
-            pos=self.cursorPos)
-        self.cursor.setTransparency(1)
-        self.cursor.setColor((self.cursorColor[0], self.cursorColor[1], self.cursorColor[2], self.cursorAlpha))
+        # is this is the first time we show the cursor then fade it in
+        if not cursor_update:
+            for i in range(self.fadeFrames):
+                self.cursor.setColor((self.cursorColor[0], self.cursorColor[1], self.cursorColor[2],
+                                      self.cursorAlpha * float(i) / self.fadeFrames))
+                # sleep to allow the scree to update
+                self.sleep(0.8 / self.framerate)
+        else:
+            self.cursor.setColor((self.cursorColor[0], self.cursorColor[1], self.cursorColor[2], self.cursorAlpha))
 
     def removeCursor(self):
-        # remove cursor 
-        self.cursor.destroy()
+        # destroy the cursor
+        if self.cursor is not None:
+            self.cursor.destroy()
+            self.cursor = None
+
+    def wait4fixation(self, gaze_inlet, duration, max_duration, limit=0.9,
+                      mask_array=None, location=(0, 0), radius=0.05, scene_coord=True):
+
+        max_frames = self.framerate * max_duration
+        fix_frames = self.framerate * duration
+        deq = deque(maxlen=fix_frames)
+        for f in range(max_frames):
+            # flush the lsl input stream, not yet sure why
+            gaze_inlet.flush()
+
+            # get enough to decide whether fixation took place
+            # sample, timestamp = inlet.pull_sample()
+            eg_sample, eg_timestamp = gaze_inlet.pull_chunk(max_samples=fix_frames)
+
+            if self.show_cursor:
+                # calculate the current gaze location
+                if len(eg_sample) > 0:
+                    curr_gaze = self.screen2scene((eg_sample[-1][0] + eg_sample[-1][2]) / 2,
+                                                  (eg_sample[-1][1] + eg_sample[-1][3]) / 2)
+                    # show the current gaze location if required
+                    # print ('Position {} \r'.format((curr_gaze[0], 0, curr_gaze[1])))
+                    self.showCursor((curr_gaze[0], 0, curr_gaze[1]))
+                    # wait for the screen to get updated
+                    self.sleep(.8 / self.framerate)
+
+            # check if enough gaze was on target,
+            # namely more than 90% of the fixation time was on or around the target (a white mask pixel)
+            # skip = int(0.1*fix_frames)
+            for i, gs in enumerate(eg_sample):
+                deq.append(gs)
+                # if skip != 0 and i % skip != 0:
+                #     continue
+                if len(deq) == fix_frames:
+                    if mask_array is not None:
+                        im_coord = np.array([self.screen2image((x1 + x2) / 2, (y1 + y2) / 2,
+                                                               mask_array.shape[1], mask_array.shape[0])
+                                             for (x1, y1, x2, y2) in deq])
+                        # print(sum(mask_array[im_coord[:, 1], im_coord[:, 0]]), " / ", limit * fix_frames)
+                        if sum(mask_array[im_coord[:, 1], im_coord[:, 0]]) > limit * fix_frames:
+                            print("Fixation found, going to the next task")
+                            return True
+                    elif scene_coord:
+                        sce_coord = np.array([self.screen2scene((x1 + x2) / 2, (y1 + y2) / 2)
+                                             for (x1, y1, x2, y2) in deq])
+                        dists = np.linalg.norm(sce_coord - location, axis=1)
+                        # print(np.sum(dists < radius), " / ", limit * fix_frames)
+                        if np.sum(dists < radius) > limit * fix_frames:
+                            print("Fixation found, going to the next task")
+                            return True
+                    else:
+                        scr_coord = np.array([((x1 + x2) / 2, (y1 + y2) / 2)
+                                             for (x1, y1, x2, y2) in deq])
+                        dists = np.linalg.norm(scr_coord - location, axis=1)
+                        # print(np.sum(dists < radius), " / ", limit * fix_frames)
+                        if np.sum(dists < radius) > limit * fix_frames:
+                            print("Fixation found, going to the next task")
+                            return True
+
+        return False
 
     def run(self):
 
@@ -273,13 +340,6 @@ class Main(LatentModule):
         if self.instruction:
             pass
 
-        # setting visual search steps 
-        self.visualsearchframes = int(self.framerate * self.maxtime)
-        self.fixationframes = int(self.framerate * self.fixationtime)
-
-        # create a queue to keep the data for calculating the fixation
-        deq = deque(maxlen=self.fixationframes)
-
         """ main loop """
         for block in range(self.blocks):
             for trial in range(self.trials):
@@ -313,83 +373,54 @@ class Main(LatentModule):
                 # ##########################
                 # run next trial
                 # ##########################
-                # Show the circle in a random position
-                self.circleOn(pos=[uniform(0, 1), 0, uniform(0, 1)])
-                self.sleep(uniform(self.circleTime[0], self.circleTime[1]))
-                self.circleOff()
+                # Show the cross in the middle of the screen where the target will show up
+                self.crossOn(pos=[0, 0])
+                self.sleep(uniform(self.crossTime[0], self.crossTime[1]))
+                self.crossOff()
 
                 # show the target character - first show a flashing rectangle and send a marker to LSL
                 self.photomarker("target")
-                self.picture(thistarget, duration=self.targetduration, pos=[0, 0, 0], scale=[0.126, 1, 0.2],
-                             color=self.photomarkerColour)
+                self.picture(thistarget, duration=self.target_time, pos=[0, 0, 0], scale=[0.126, 1, 0.2],
+                             color=self.photomarkerColour, block=True)
 
-                # Show the circle again in a random position (should this be the same as before?)
-                self.circleOn(pos=[uniform(0, 1), 0, uniform(0, 1)])
-                self.sleep(uniform(self.circleTime[0], self.circleTime[1]))
+                # Show a circle in a random position and wait until the user has fixated it
+                pos = [uniform(0, self.margin*self.scene_sx), uniform(0, self.margin*self.scene_sy)]
+                sce_pos = self.screen2scene(pos[0], pos[1])
+                self.circleOn(pos=sce_pos)
+                self.wait4fixation(gaze_inlet=inlet, duration=self.fixation_time, max_duration=30,
+                                   location=sce_pos, scene_coord=True, radius=.15)
                 self.circleOff()
 
-                # show location during debug 
-                # self.picture(self.waldomaskpath + usethismask, duration=0.3,
-                # pos = [0,0,0], scale=[1.5,1,0.95], color=self.photomarkerColour)
                 # show the book image to search for the character
-                self.photomarker("image")
-
+                # Load the mask image
+                maskfile = Image.open(self.waldomaskpath + usethismask)
+                maskfile.load()
+                mask_image_array = np.asarray(maskfile, dtype=int)
                 image_width, im_height = Image.open(self.waldoimagepath + showthisimage).size
                 image_ar = float(image_width)/float(im_height)
                 if not simple_almost_equal(image_ar, self.scene_ar):
                     print("Warning: image aspect ratio different from scene aspect ratio."
                           "\nImage covers full scene. "
                           "\nConsider change image %s size" % showthisimage)
-                self.picture(self.waldoimagepath + showthisimage, duration=self.maxtime, pos=[0, 0, 0],
+                self.photomarker("image")
+                self.picture(self.waldoimagepath + showthisimage, duration=self.image_time, pos=[0, 0, 0],
                              scale=[self.scene_ar, 1, 1], color=self.photomarkerColour, block=False)
-                if self.debug:
-                    self.picture(self.waldomaskpath + usethismask, duration=self.maxtime, pos=[0, 0, 0],
+                if self.show_mask:
+                    self.picture(self.waldomaskpath + usethismask, duration=self.image_time, pos=[0, 0, 0],
                                  scale=[self.scene_ar, 1, 1], color=self.photomarkerColour, block=False)
 
-                # Load the mask image
-                maskfile = Image.open(self.waldomaskpath + usethismask)
-                maskfile.load()
-                mask_image_array = np.asarray(maskfile, dtype=int)
+                self.wait4fixation(gaze_inlet=inlet, duration=self.fixation_time, max_duration=self.image_time,
+                                   mask_array=mask_image_array)
+                # inlet.flush()
 
-                # show cursor and change for fixation
-                self.showCursor()
-                for f in range(self.visualsearchframes):
-                    # flush the lsl input stream, not yet sure why
-                    # inlet.flush()
+                if self.show_cursor:
+                    self.removeCursor()
 
-                    # get enough to decide whether fixation took place
-                    # sample, timestamp = inlet.pull_sample()
-                    eg_sample, eg_timestamp = inlet.pull_chunk(max_samples=self.fixationframes)
+                # wait to get the screen updated
+                self.sleep(1.0 / self.framerate)
 
-                    # calculate the current gaze location
-                    curr_gaze = (0.0, 0.0) if len(eg_sample) == 0 \
-                        else self.screen2scene((eg_sample[-1][0] + eg_sample[-1][2])/2,
-                                               (eg_sample[-1][1] + eg_sample[-1][3])/2)
-                    self.cursorPos = (curr_gaze[0], 0, curr_gaze[1])
-                    print 'Position {} \r'.format(self.cursorPos),
-
-                    # show the current gaze location if required
-                    self.updateCursor()
-
-                    # check if enough gaze was on target,
-                    # namely more than 90% of the fixation time was on or around the target (a white mask pixel)
-                    for gs in eg_sample:
-                        deq.append(gs)
-
-                    if len(deq) == self.fixationframes:
-                        im_coord = np.array([self.screen2image((x1+x2)/2, (y1+y2)/2, image_width, im_height)
-                                             for (x1, y1, x2, y2) in deq])
-                        if sum(mask_image_array[im_coord[:, 1], im_coord[:, 0]]) > 0.9*self.fixationframes:
-                            print("Fixation found, going to the next task")
-                            self.removeCursor()
-                            break
-
-                    inlet.flush()
-                    # wait to get the screen updated
-                    self.sleep(1.0 / self.framerate)
-
-                self.removeCursor()
-                self.sleep(uniform(self.blanktime[0], self.blanktime[1]))
+                # wait before going to the next image
+                self.sleep(uniform(self.blank_time[0], self.blank_time[1]))
                 self.cursorPos = (0, 0, 0)
 
         """ end main loop """
@@ -408,16 +439,6 @@ class Main(LatentModule):
         self.sleep(self.beforefeedbacktime + (random() * 2 - 1) * self.beforefeedbacktimedev)
         self.photomarker("feedback" + str(posneg))
         self.picture(file, duration=self.feedbacktime, scale=self.feedbacksize, color=self.feedbackcolor)
-
-    def waitForUser(self):
-        # waiting for user to be ready
-        self.write(
-            text=self.textPressSpace,
-            font=self.fontFace,
-            scale=self.textScale,
-            fg=self.textColour,
-            bg=self.textBgColour,
-            duration="space")
 
     def setSubject(self, subject):
         # removing subject entry elements, setting subject variable
@@ -478,7 +499,7 @@ class Main(LatentModule):
 
         self.rectangle(
             rect=rect,
-            duration=self.photomarkerDuration,
+            duration=self.photomarker_time,
             color=self.photomarkerColour,
             block=False)
 
