@@ -26,16 +26,16 @@ from os import listdir
 from math import floor, isnan
 from pylslx import StreamInlet, resolve_stream
 from collections import deque
-# from pathlib import Path
 from PIL import Image
 import numpy as np
+
 
 # from pylsl import StreamInfo, StreamOutlet,
 
 
 def simple_almost_equal(a, b, dec=3):
     return (a == b or
-            int(floor(a*10**dec)) == int(floor(b*10**dec)))
+            int(floor(a * 10 ** dec)) == int(floor(b * 10 ** dec)))
 
 
 class Main(LatentModule):
@@ -50,8 +50,7 @@ class Main(LatentModule):
         self.waldomaskpath = "./media/waldo/masks/"  # mask path
         self.waldocharpath = "./media/waldo/ch/"  # character path
         self.waldoimages = listdir(self.waldoimagepath)  # read available images
-        shuffle(self.waldoimages)  # shuffle images in order
-        # self.waldoimages =  ["book1-part1_ch1_blank.png"]
+        shuffle(self.waldoimages)  # shuffle images inplace
 
         self.alltrials = len(self.waldoimages)  # all trials
         self.blocks = 12  # number of blocks
@@ -92,14 +91,11 @@ class Main(LatentModule):
         self.textPressSpace = "Press space to continue"  # text to display at user prompts
         self.textExperimentEnd = "End of this part"  # text to display at the end of the experiment
 
-        self.photomarkerColour = (1, 1, 1, 1)  # photomarker colour = full white
-        self.photomarkerScale = .1  # photomarker scale = 10%
-        self.photomarker_time = .15  # photomarker duration in seconds
-        self.photomarkerPosition = "lr"  # default photomarker position:
-        # tl = top left
-        # ll = lower left
-        # tr = top right
-        # lr = lower right
+        self.photomarkerColour = (1, 1, 1, 1)  # photo marker colour = full white
+        self.photomarkerScale = .1  # photo marker scale = 10%
+        self.photomarker_time = .15  # photo marker duration in seconds
+        self.photomarkerPosition = "lr"  # default photo marker position, where to show it
+        # tl = top left # ll = lower left # tr = top right # lr = lower right
 
         self.crossTime = [0.5, 0.9]  # duration range in seconds that the crosshair is visible before each block
         self.crossScale = 0.15  # size of the crosshair
@@ -107,7 +103,7 @@ class Main(LatentModule):
 
         self.margin = 0.8
         self.circleTime = [0.5, 0.9]  # duration range in seconds that the crosshair is visible before each block
-        self.circleScale = 0.15  # size of the circle
+        self.circleScale = 0.1  # size of the circle
         self.circleColour = (.5, .5, .5, 1)  # colour of the crosshair
 
         self.framerate = 600  # in Hz
@@ -127,10 +123,10 @@ class Main(LatentModule):
         self.scene_ar = float(self.scene_sx / self.scene_sy)
 
     def screen2scene(self, x, y):
-        return (2*x/self.scene_sx - 1) * self.scene_ar, -2*y / self.scene_sy + 1
+        return (2 * x / self.scene_sx - 1) * self.scene_ar, -2 * y / self.scene_sy + 1
 
     def screen2image(self, x, y, im_width, im_height):
-        return int(float(x)/self.scene_sx*im_width), int(float(y)/self.scene_sy*im_height)
+        return int(float(x) / self.scene_sx * im_width), int(float(y) / self.scene_sy * im_height)
 
     def waitForUser(self):
         # waiting for user to be ready
@@ -153,9 +149,9 @@ class Main(LatentModule):
 
         for i in range(self.fadeFrames):
             self.circleGraphics.setColor((self.circleColour[0],
-                                         self.circleColour[1],
-                                         self.circleColour[2],
-                                         self.circleColour[3] * float(i) / self.fadeFrames))
+                                          self.circleColour[1],
+                                          self.circleColour[2],
+                                          self.circleColour[3] * float(i) / self.fadeFrames))
             self.sleep(1.0 / self.framerate)
 
     def circleOff(self):
@@ -267,7 +263,7 @@ class Main(LatentModule):
                             return True
                     elif scene_coord:
                         sce_coord = np.array([self.screen2scene((x1 + x2) / 2, (y1 + y2) / 2)
-                                             for (x1, y1, x2, y2) in deq])
+                                              for (x1, y1, x2, y2) in deq])
                         dists = np.linalg.norm(sce_coord - location, axis=1)
                         # print(np.sum(dists < radius), " / ", limit * fix_frames)
                         if np.sum(dists < radius) > limit * fix_frames:
@@ -275,7 +271,7 @@ class Main(LatentModule):
                             return True
                     else:
                         scr_coord = np.array([((x1 + x2) / 2, (y1 + y2) / 2)
-                                             for (x1, y1, x2, y2) in deq])
+                                              for (x1, y1, x2, y2) in deq])
                         dists = np.linalg.norm(scr_coord - location, axis=1)
                         # print(np.sum(dists < radius), " / ", limit * fix_frames)
                         if np.sum(dists < radius) > limit * fix_frames:
@@ -384,7 +380,7 @@ class Main(LatentModule):
                              color=self.photomarkerColour, block=True)
 
                 # Show a circle in a random position and wait until the user has fixated it
-                pos = [uniform(0, self.margin*self.scene_sx), uniform(0, self.margin*self.scene_sy)]
+                pos = [uniform(0, self.margin * self.scene_sx), uniform(0, self.margin * self.scene_sy)]
                 sce_pos = self.screen2scene(pos[0], pos[1])
                 self.circleOn(pos=sce_pos)
                 self.wait4fixation(gaze_inlet=inlet, duration=self.fixation_time, max_duration=30,
@@ -397,7 +393,7 @@ class Main(LatentModule):
                 maskfile.load()
                 mask_image_array = np.asarray(maskfile, dtype=int)
                 image_width, im_height = Image.open(self.waldoimagepath + showthisimage).size
-                image_ar = float(image_width)/float(im_height)
+                image_ar = float(image_width) / float(im_height)
                 if not simple_almost_equal(image_ar, self.scene_ar):
                     print("Warning: image aspect ratio different from scene aspect ratio."
                           "\nImage covers full scene. "
