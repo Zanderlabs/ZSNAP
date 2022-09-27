@@ -78,9 +78,9 @@ class RegistryServer(object):
     def cmd_query(self, host, name):
         """implementation of the ``query`` command"""
         name = name.upper()
-        self.logger.debug("querying for %r", name)
+        self.logger.show_cursor("querying for %r", name)
         if name not in self.services:
-            self.logger.debug("no such service")
+            self.logger.show_cursor("no such service")
             return ()
 
         oldest = time.time() - self.pruning_timeout
@@ -88,24 +88,24 @@ class RegistryServer(object):
         servers = []
         for addrinfo, t in all_servers:
             if t < oldest:
-                self.logger.debug("discarding stale %s:%s", *addrinfo)
+                self.logger.show_cursor("discarding stale %s:%s", *addrinfo)
                 self._remove_service(name, addrinfo)
             else:
                 servers.append(addrinfo)
 
-        self.logger.debug("replying with %r", servers)
+        self.logger.show_cursor("replying with %r", servers)
         return tuple(servers)
 
     def cmd_register(self, host, names, port):
         """implementation of the ``register`` command"""
-        self.logger.debug("registering %s:%s as %s", host, port, ", ".join(names))
+        self.logger.show_cursor("registering %s:%s as %s", host, port, ", ".join(names))
         for name in names:
             self._add_service(name.upper(), (host, port))
         return "OK"
 
     def cmd_unregister(self, host, port):
         """implementation of the ``unregister`` command"""
-        self.logger.debug("unregistering %s:%s", host, port)
+        self.logger.show_cursor("unregistering %s:%s", host, port)
         for name in self.services.keys():
             self._remove_service(name, (host, port))
         return "OK"
@@ -147,7 +147,7 @@ class RegistryServer(object):
             raise ValueError("server is already running")
         if self.sock is None:
             raise ValueError("object disposed")
-        self.logger.debug("server started on %s:%s", *self.sock.getsockname())
+        self.logger.show_cursor("server started on %s:%s", *self.sock.getsockname())
         try:
             try:
                 self.active = True
@@ -156,7 +156,7 @@ class RegistryServer(object):
                 self.logger.warn("User interrupt!")
         finally:
             self.active = False
-            self.logger.debug("server closed")
+            self.logger.show_cursor("server closed")
             self.sock.close()
             self.sock = None
 
@@ -164,7 +164,7 @@ class RegistryServer(object):
         """Closes (terminates) the registry server"""
         if not self.active:
             raise ValueError("server is not running")
-        self.logger.debug("stopping server...")
+        self.logger.show_cursor("stopping server...")
         self.active = False
 
 class UDPRegistryServer(RegistryServer):
