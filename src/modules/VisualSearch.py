@@ -226,16 +226,23 @@ class Main(LatentModule):
     def wait4fixation(self, gaze_inlet, duration, max_duration, limit=0.9,
                       mask_array=None, location=(0, 0), radius=0.05, scene_coord=True):
 
-        max_frames = self.framerate * max_duration
         fix_frames = self.framerate * duration
         deq = deque(maxlen=fix_frames)
-        for f in range(max_frames):
-            # flush the lsl input stream, not yet sure why
-            gaze_inlet.flush()
+        start_time = time()
+        while True:
+            # check if max duration has passed
+            if time() - start_time >= max_duration:
+                break
 
             # get enough to decide whether fixation took place
-            # sample, timestamp = inlet.pull_sample()
+            # flush the lsl input stream, not yet sure why
+            gaze_inlet.flush()
             eg_sample, eg_timestamp = gaze_inlet.pull_chunk(max_samples=fix_frames)
+            # if there's nothing yet then try one more time
+            if len(eg_sample) == 0:
+                continue
+
+            # screen/manage the nans if required
             if self.fill_nans:
                 if np.isnan(eg_sample).any():
                     # try to keep bridge the gap
@@ -243,6 +250,7 @@ class Main(LatentModule):
                         fillna(method='ffill', inplace=False, limit=fix_frames//self.fill_2much_ratio).\
                         fillna(method="bfill", inplace=False, limit=fix_frames//self.fill_2much_ratio).to_numpy()
 
+            # show the cursor if required
             if self.show_cursor:
                 # calculate the current gaze location
                 if len(eg_sample) > 0:
@@ -256,7 +264,7 @@ class Main(LatentModule):
                     # print ('Position {} \r'.format((curr_gaze[0], 0, curr_gaze[1])))
                     self.showCursor((curr_gaze[0], 0, curr_gaze[1]))
                     # wait for the screen to get updated
-                    self.sleep(.8 / self.framerate)
+                    self.sleep(.1 / self.framerate)
 
             # check if enough gaze was on target,
             # namely more than 90% of the fixation time was on or around the target (a white mask pixel)
@@ -268,6 +276,7 @@ class Main(LatentModule):
                 if len(deq) == fix_frames:
                     # get all non nans from deq
                     data = [x for x in deq if not np.isnan(x).any()]
+                    # if nothing remained then skip
                     if len(data) == 0:
                         break
                     if mask_array is not None:
