@@ -43,6 +43,11 @@ class Main(LatentModule):
     def __init__(self):
         LatentModule.__init__(self)
 
+        # Scene size
+        self.scene_sx = float(base.win.getXSize())
+        self.scene_sy = float(base.win.getYSize())
+        self.scene_ar = float(self.scene_sx / self.scene_sy)
+
         self.show_cursor = True
         self.show_mask = True
         self.fill_nans = True
@@ -101,13 +106,14 @@ class Main(LatentModule):
         # tl = top left # ll = lower left # tr = top right # lr = lower right
 
         self.crossTime = [0.5, 0.9]  # duration range in seconds that the crosshair is visible before each block
-        self.crossScale = 0.15  # size of the crosshair
         self.crossColour = (.5, .5, .5, 1)  # colour of the crosshair
+        self.crossScale = 0.15  # size of the crosshair
 
-        self.margin = 0.8
+        self.circle_file = "./media/circle.png"
         self.circleTime = [0.5, 0.9]  # duration range in seconds that the crosshair is visible before each block
-        self.circleScale = 0.1  # size of the circle
         self.circleColour = (.5, .5, .5, 1)  # colour of the crosshair
+        self.margin = 0.8
+        self.circleScale = 0.1  # size of the circle
 
         self.framerate = 600  # in Hz
         self.fadeTime = 0.1  # time that sparkles/tasks take to fade in/out, in seconds
@@ -119,11 +125,6 @@ class Main(LatentModule):
         self.cursorScale = 0.05
         self.cursorPos = (0, 0, 0)
         self.cursorColor = (0.92, 0.04, 0.56)
-
-        # Scene size
-        self.scene_sx = float(base.win.getXSize())
-        self.scene_sy = float(base.win.getYSize())
-        self.scene_ar = float(self.scene_sx / self.scene_sy)
 
     def screen2scene(self, x, y):
         return (2 * x / self.scene_sx - 1) * self.scene_ar, -2 * y / self.scene_sy + 1
@@ -406,11 +407,11 @@ class Main(LatentModule):
                              color=self.photomarkerColour, block=True)
 
                 # Show a circle in a random position and wait until the user has fixated it
-                pos = [uniform(0, self.margin * self.scene_sx), uniform(0, self.margin * self.scene_sy)]
-                sce_pos = self.screen2scene(pos[0], pos[1])
-                self.circleOn(pos=sce_pos)
+                pos = [uniform(-self.margin*self.scene_ar, self.margin*self.scene_ar),
+                       uniform(-self.margin, self.margin)]
+                self.circleOn(pos=pos)
                 self.wait4fixation(gaze_inlet=inlet, duration=self.fixation_time, max_duration=30,
-                                   location=sce_pos, scene_coord=True, radius=.15)
+                                   location=pos, scene_coord=True, radius=.15)
                 self.circleOff()
 
                 # show the book image to search for the character
