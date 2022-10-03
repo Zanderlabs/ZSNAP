@@ -54,23 +54,16 @@ class Main(LatentModule):
         self.fill_2much_ratio = 2
 
         # read images for stimuli
-        self.waldoimagepath = "./media/waldo/images/"  # image path
-        self.waldomaskpath = "./media/waldo/masks/"  # mask path
-        self.waldocharpath = "./media/waldo/ch/"  # character path
-        self.waldoimages = listdir(self.waldoimagepath)  # read available images
-        shuffle(self.waldoimages)  # shuffle images inplace
-
-        self.alltrials = len(self.waldoimages)  # all trials
-        self.blocks = 12  # number of blocks
-        self.ntrialperblock = floor(self.alltrials / self.blocks)  # max integer number of images per block
-        self.trials = int(self.ntrialperblock * self.blocks)  # integer number of trials
+        self.waldopath = "./media/waldo/"  # media path
+        self.waldomasksfolder = "masks/"  # mask folder
+        self.waldoimagesfolder = "images/"  # images folder
 
         # Waldo/Wally # Wenda # White beard # Odlaw
-        self.waldotarget = ["./media/waldo/ch/ch1_b.png",
-                            "./media/waldo/ch/ch2_b.png",
-                            "./media/waldo/ch/ch3_b.png",
-                            "./media/waldo/ch/ch4_b.png"]
-
+        self.waldotarget = ["ch1","ch2","ch3","ch4"]
+        # random order of targets
+        shuffle(self.waldotarget)
+        self.blocks = 5  # number of blocks
+        
         self.moduleName = "VisualSearch"
 
         self.backgroundColour = (0, 0, 0, 1)  # background colour
@@ -113,7 +106,7 @@ class Main(LatentModule):
         self.circleTime = [0.5, 0.9]  # duration range in seconds that the crosshair is visible before each block
         self.circleColour = (.5, .5, .5, 1)  # colour of the crosshair
         self.margin = 0.8
-        self.circleScale = 0.1  # size of the circle
+        self.circleScale = 0.05  # size of the circle
 
         self.framerate = 600  # in Hz
         self.fadeTime = 0.1  # time that sparkles/tasks take to fade in/out, in seconds
@@ -287,6 +280,7 @@ class Main(LatentModule):
                         # print(sum(mask_array[im_coord[:, 1], im_coord[:, 0]]), " / ", limit * fix_frames)
                         if sum(mask_array[im_coord[:, 1], im_coord[:, 0]]) > limit * fix_frames:
                             print("Fixation found, going to the next task")
+                            self.marker("fixation")
                             return True
                     elif scene_coord:
                         sce_coord = np.array([self.screen2scene((x1 + x2) / 2, (y1 + y2) / 2)
@@ -295,6 +289,7 @@ class Main(LatentModule):
                         # print(np.sum(dists < radius), " / ", limit * fix_frames)
                         if np.sum(dists < radius) > limit * fix_frames:
                             print("Fixation found, going to the next task")
+                            self.marker("fixation")
                             return True
                     else:
                         scr_coord = np.array([((x1 + x2) / 2, (y1 + y2) / 2)
@@ -303,6 +298,7 @@ class Main(LatentModule):
                         # print(np.sum(dists < radius), " / ", limit * fix_frames)
                         if np.sum(dists < radius) > limit * fix_frames:
                             print("Fixation found, going to the next task")
+                            self.marker("fixation")
                             return True
 
         return False
@@ -362,12 +358,28 @@ class Main(LatentModule):
 
         if self.instruction:
             pass
-
+        
         """ main loop """
-        for block in range(self.blocks):
-            for trial in range(self.trials):
+        for block in range(len(self.waldotarget)):
+            
+            # construct path to images and masks
+            self.waldoimagepath = self.waldopath + self.waldotarget[block] +"/"+ self.waldoimagesfolder 
+            self.waldomaskpath = self.waldopath + self.waldotarget[block] +"/"+ self.waldomasksfolder 
+            
+            # read all images from  target character
+            self.waldoimages = listdir(self.waldoimagepath)  # read available images
+            shuffle(self.waldoimages)  # shuffle images inplace
+            
+            ntrialperblock = int(floor(len(self.waldoimages)/self.blocks)) # number of images in a block
+            trials = int(ntrialperblock*self.blocks) # total number of trials
+            
+            # which target?
+            thistarget = self.waldotarget[block] # target in this block
+            print (thistarget)
+            
+            for trial in range(trials):
 
-                if trial % self.ntrialperblock == 0:  # number of trials divided by trials per block (zero every block)
+                if trial % ntrialperblock == 0:  # number of trials divided by trials per block (zero every block)
                     # self-paced break
                     self.waitForUser()
                     self.sleep(1)
@@ -381,34 +393,26 @@ class Main(LatentModule):
                 # log image
                 self.log(block + 1, trial + 1, showthisimage)
 
-                # which target?
-                if 'ch1' in showthisimage:
-                    thistarget = self.waldotarget[0]
-                if 'ch2' in showthisimage:
-                    thistarget = self.waldotarget[1]
-                if 'ch3' in showthisimage:
-                    thistarget = self.waldotarget[2]
-                if 'ch4' in showthisimage:
-                    thistarget = self.waldotarget[3]
-
-                print (thistarget)
-
                 # ##########################
                 # run next trial
                 # ##########################
                 # Show the cross in the middle of the screen where the target will show up
+                self.marker("cross")
                 self.crossOn(pos=[0, 0])
                 self.sleep(uniform(self.crossTime[0], self.crossTime[1]))
                 self.crossOff()
 
                 # show the target character - first show a flashing rectangle and send a marker to LSL
+                self.marker(self.waldotarget[block])
                 self.photomarker("target")
-                self.picture(thistarget, duration=self.target_time, pos=[0, 0, 0], scale=[0.126, 1, 0.2],
+                self.picture(self.waldopath+thistarget+"/"+thistarget+'_b.png',
+                             duration=self.target_time, pos=[0, 0, 0], scale=[0.126, 1, 0.2],
                              color=self.photomarkerColour, block=True)
 
                 # Show a circle in a random position and wait until the user has fixated it
                 pos = [uniform(-self.margin*self.scene_ar, self.margin*self.scene_ar),
                        uniform(-self.margin, self.margin)]
+                self.marker("dot")
                 self.circleOn(pos=pos)
                 self.wait4fixation(gaze_inlet=inlet, duration=self.fixation_time, max_duration=30,
                                    location=pos, scene_coord=True, radius=.15)
@@ -449,6 +453,7 @@ class Main(LatentModule):
                 self.sleep(1.0 / self.framerate)
 
                 # wait before going to the next image
+                self.marker("blank")
                 self.sleep(uniform(self.blank_time[0], self.blank_time[1]))
                 self.cursorPos = (0, 0, 0)
 
