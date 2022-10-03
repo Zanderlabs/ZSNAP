@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 
 """
 @authors    TSE, AGC, NVJ
@@ -23,7 +24,7 @@ from panda3d.core import TextProperties, TextPropertiesManager
 from random import choice, random, sample, shuffle, uniform
 from time import time
 from os import listdir
-from math import floor, isnan
+from math import floor
 from pylslx import StreamInlet, resolve_stream
 from collections import deque
 from PIL import Image
@@ -59,11 +60,11 @@ class Main(LatentModule):
         self.waldoimagesfolder = "images/"  # images folder
 
         # Waldo/Wally # Wenda # White beard # Odlaw
-        self.waldotarget = ["ch1","ch2","ch3","ch4"]
+        self.waldotarget = ["ch1", "ch2", "ch3", "ch4"]
         # random order of targets
         shuffle(self.waldotarget)
         self.blocks = 5  # number of blocks
-        
+
         self.moduleName = "VisualSearch"
 
         self.backgroundColour = (0, 0, 0, 1)  # background colour
@@ -109,8 +110,10 @@ class Main(LatentModule):
         self.margin = 0.8
         self.circleScale = 0.05  # size of the circle
 
-        self.framerate = 600  # in Hz
-        self.fadeTime = 0.1  # time that sparkles/tasks take to fade in/out, in seconds
+        self.gaze_framerate = 600  # de expected frame rate (in Hz) of the gaze data
+        self.fadeTime = 0.5  # time that sparkles/tasks take to fade in/out, in seconds
+        # setting fade length in frames
+        self.fadeFrames = int(self.fadeTime / self._frametime)
 
         self.currenttrial = 0  # main index for trials
 
@@ -119,6 +122,9 @@ class Main(LatentModule):
         self.cursorScale = 0.05
         self.cursorPos = (0, 0, 0)
         self.cursorColor = (0.92, 0.04, 0.56)
+
+        self.circleGraphics = None
+        self.crossGraphics = None
 
     def screen2scene(self, x, y):
         return (2 * x / self.scene_sx - 1) * self.scene_ar, -2 * y / self.scene_sy + 1
@@ -137,7 +143,7 @@ class Main(LatentModule):
             duration='space')
 
     def circleOn(self, pos=(0, 0)):
-        # fading cross in
+        # Create the graphical object
         self.circleGraphics = self._engine.direct.gui.OnscreenImage.OnscreenImage(
             image='circle.png',
             scale=self.circleScale,
@@ -145,12 +151,16 @@ class Main(LatentModule):
             color=(self.circleColour[0], self.circleColour[1], self.circleColour[2], 0))
         self.circleGraphics.setTransparency(1)
 
-        for i in range(self.fadeFrames):
+        # fading circle in
+        for i in range(self.fadeFrames - 1):
             self.circleGraphics.setColor((self.circleColour[0],
                                           self.circleColour[1],
                                           self.circleColour[2],
                                           self.circleColour[3] * float(i) / self.fadeFrames))
-            self.sleep(1.0 / self.framerate)
+            self.sleep(self._frametime)
+        # make sure it is visible at the end
+        self.circleGraphics.setColor((self.circleColour[0], self.circleColour[1],
+                                      self.circleColour[2], self.circleColour[3]))
 
     def circleOff(self):
         # fading circle out
@@ -159,12 +169,11 @@ class Main(LatentModule):
                                           self.circleColour[1],
                                           self.circleColour[2],
                                           self.circleColour[3] - self.circleColour[3] * float(i) / self.fadeFrames))
-            self.sleep(1.0 / self.framerate)
+            self.sleep(self._frametime)
 
         self.circleGraphics.destroy()
 
     def crossOn(self, pos=(0, 0)):
-        # fading cross in
         self.crossGraphics = self._engine.direct.gui.OnscreenImage.OnscreenImage(
             image='cross.png',
             pos=[pos[0], 0, pos[1]],
@@ -172,19 +181,23 @@ class Main(LatentModule):
             color=(self.crossColour[0], self.crossColour[1], self.crossColour[2], 0))
         self.crossGraphics.setTransparency(1)
 
-        for i in range(self.fadeFrames):
+        # fading cross in
+        for i in range(self.fadeFrames - 1):
             self.crossGraphics.setColor((self.crossColour[0],
                                          self.crossColour[1],
                                          self.crossColour[2],
                                          self.crossColour[3] * float(i) / self.fadeFrames))
-            self.sleep(1.0 / self.framerate)
+            self.sleep(self._frametime)
+
+        self.crossGraphics.setColor((self.crossColour[0], self.crossColour[1],
+                                     self.crossColour[2], self.crossColour[3]))
 
     def crossOff(self):
         # fading cross out
         for i in range(self.fadeFrames):
             self.crossGraphics.setColor((self.crossColour[0], self.crossColour[1], self.crossColour[2],
                                          self.crossColour[3] - self.crossColour[3] * float(i) / self.fadeFrames))
-            self.sleep(1.0 / self.framerate)
+            self.sleep(self._frametime)
 
         self.crossGraphics.destroy()
 
@@ -201,16 +214,7 @@ class Main(LatentModule):
             scale=self.cursorScale,
             pos=pos)
         self.cursor.setTransparency(1)
-
-        # is this is the first time we show the cursor then fade it in
-        if not cursor_update:
-            for i in range(self.fadeFrames):
-                self.cursor.setColor((self.cursorColor[0], self.cursorColor[1], self.cursorColor[2],
-                                      self.cursorAlpha * float(i) / self.fadeFrames))
-                # sleep to allow the scree to update
-                self.sleep(0.8 / self.framerate)
-        else:
-            self.cursor.setColor((self.cursorColor[0], self.cursorColor[1], self.cursorColor[2], self.cursorAlpha))
+        self.cursor.setColor((self.cursorColor[0], self.cursorColor[1], self.cursorColor[2], self.cursorAlpha))
 
     def removeCursor(self):
         # destroy the cursor
@@ -218,86 +222,91 @@ class Main(LatentModule):
             self.cursor.destroy()
             self.cursor = None
 
-    def wait4fixation(self, gaze_inlet, duration, max_duration, limit=0.9,
+    def wait4fixation(self, gaze_inlet, fix_duration, max_duration, fix_threshold=0.9, check_every=0.1,
                       mask_array=None, location=(0, 0), radius=0.05, scene_coord=True):
-
-        fix_frames = self.framerate * duration
+        fix_frames = self.gaze_framerate * fix_duration
         deq = deque(maxlen=fix_frames)
+        gaze_inlet.flush()
         start_time = time()
         while True:
             # check if max duration has passed
             if time() - start_time >= max_duration:
                 break
+            # sleep enough to allow game to update screen
+            self.sleep(0.1 * self._frametime)
 
-            # get enough to decide whether fixation took place
-            # flush the lsl input stream, not yet sure why
-            gaze_inlet.flush()
+            # get next available samples
             eg_sample, eg_timestamp = gaze_inlet.pull_chunk(max_samples=fix_frames)
+            # print("pulled #: %d \n" % len(eg_sample), end="")
             # if there's nothing yet then try one more time
             if len(eg_sample) == 0:
                 continue
 
-            # screen/manage the nans if required
-            if self.fill_nans:
-                if np.isnan(eg_sample).any():
-                    # try to keep bridge the gap
-                    eg_sample = pd.DataFrame(eg_sample).\
-                        fillna(method='ffill', inplace=False, limit=fix_frames//self.fill_2much_ratio).\
-                        fillna(method="bfill", inplace=False, limit=fix_frames//self.fill_2much_ratio).to_numpy()
-
             # show the cursor if required
             if self.show_cursor:
                 # calculate the current gaze location
-                if len(eg_sample) > 0:
-                    if np.isnan(eg_sample[-1]).any():
-                        # Ignore nan and go further
-                        continue
-
+                if not np.isnan(eg_sample[-1]).any():
+                    # Ignore nan and go further
                     curr_gaze = self.screen2scene((eg_sample[-1][0] + eg_sample[-1][2]) / 2,
                                                   (eg_sample[-1][1] + eg_sample[-1][3]) / 2)
                     # show the current gaze location if required
                     # print ('Position {} \r'.format((curr_gaze[0], 0, curr_gaze[1])))
                     self.showCursor((curr_gaze[0], 0, curr_gaze[1]))
-                    # wait for the screen to get updated
-                    self.sleep(.1 / self.framerate)
 
             # check if enough gaze was on target,
             # namely more than 90% of the fixation time was on or around the target (a white mask pixel)
-            # skip = int(0.1*fix_frames)
+            skip = int(check_every * fix_frames)  # process in chunks of 10% to release the burden
             for i, gs in enumerate(eg_sample):
-                deq.append(gs)
-                # if skip != 0 and i % skip != 0:
-                #     continue
-                if len(deq) == fix_frames:
-                    # get all non nans from deq
-                    data = [x for x in deq if not np.isnan(x).any()]
-                    # if nothing remained then skip
-                    if len(data) == 0:
-                        break
+                gs_tr = (float('NaN'), float('NaN'))
+                if not np.isnan(gs).any():
                     if mask_array is not None:
-                        im_coord = np.array([self.screen2image((x1 + x2) / 2, (y1 + y2) / 2,
-                                                               mask_array.shape[1], mask_array.shape[0])
-                                             for (x1, y1, x2, y2) in data])
-                        # print(sum(mask_array[im_coord[:, 1], im_coord[:, 0]]), " / ", limit * fix_frames)
-                        if sum(mask_array[im_coord[:, 1], im_coord[:, 0]]) > limit * fix_frames:
-                            print("Fixation found, going to the next task")
-                            self.marker("fixation")
-                            return True
+                        gs_tr = self.screen2image((gs[0] + gs[2]) / 2, (gs[1] + gs[3]) / 2,
+                                                  mask_array.shape[1], mask_array.shape[0])
                     elif scene_coord:
-                        sce_coord = np.array([self.screen2scene((x1 + x2) / 2, (y1 + y2) / 2)
-                                              for (x1, y1, x2, y2) in data])
-                        dists = np.linalg.norm(sce_coord - location, axis=1)
-                        # print(np.sum(dists < radius), " / ", limit * fix_frames)
-                        if np.sum(dists < radius) > limit * fix_frames:
+                        gs_tr = self.screen2scene((gs[0] + gs[2]) / 2, (gs[1] + gs[3]) / 2)
+                    else:
+                        gs_tr = ((gs[0] + gs[2]) / 2, (gs[1] + gs[3]) / 2)
+
+                # add a new sample
+                deq.append(gs_tr)
+
+                # skip until next chunk
+                if skip != 0 and i % skip != 0:
+                    continue
+
+                # is there is enough data then test for fixation
+                if len(deq) == fix_frames:
+                    # get all data
+                    data = [x for x in deq]
+                    # screen/manage the nans if required
+                    if self.fill_nans:
+                        if np.isnan(data).any():
+                            # try to bridge the gaps
+                            data = pd.DataFrame(data). \
+                                fillna(method='ffill', limit=fix_frames // self.fill_2much_ratio). \
+                                fillna(method="bfill", limit=fix_frames // self.fill_2much_ratio).to_numpy()
+
+                    # print("after nan #: %d" % len(data), "\r", end='')
+                    # get all non nans from deq
+                    data = np.array([x for x in data if not np.isnan(x).any()])
+
+                    # if nothing remained then get more data
+                    if len(data) == 0:
+                        continue
+
+                    if mask_array is not None:
+                        # print(sum(mask_array[im_coord[:, 1], im_coord[:, 0]]), " / ", limit * fix_frames)
+                        if self.fill_nans:  # if nans were screened than the data type is float
+                            data = data.astype(int)
+
+                        if sum(mask_array[data[:, 1], data[:, 0]]) > fix_threshold * fix_frames:
                             print("Fixation found, going to the next task")
                             self.marker("fixation")
                             return True
                     else:
-                        scr_coord = np.array([((x1 + x2) / 2, (y1 + y2) / 2)
-                                              for (x1, y1, x2, y2) in data])
-                        dists = np.linalg.norm(scr_coord - location, axis=1)
+                        dists = np.linalg.norm(data - location, axis=1)
                         # print(np.sum(dists < radius), " / ", limit * fix_frames)
-                        if np.sum(dists < radius) > limit * fix_frames:
+                        if np.sum(dists < radius) > fix_threshold * fix_frames:
                             print("Fixation found, going to the next task")
                             self.marker("fixation")
                             return True
@@ -318,9 +327,6 @@ class Main(LatentModule):
 
         # setting background colour
         base.win.setClearColor(self.backgroundColour)
-
-        # setting fade length in frames
-        self.fadeFrames = int(self.framerate * self.fadeTime)
 
         # configuring smaller text for instructions
         tp = TextProperties()
@@ -359,26 +365,26 @@ class Main(LatentModule):
 
         if self.instruction:
             pass
-        
+
         """ main loop """
         for block in range(len(self.waldotarget)):
-            
+
             # construct path to images and masks
-            self.waldoimagepath = self.waldopath + self.waldotarget[block] +"/"+ self.waldoimagesfolder 
-            self.waldomaskpath = self.waldopath + self.waldotarget[block] +"/"+ self.waldomasksfolder 
-            
+            self.waldoimagepath = self.waldopath + self.waldotarget[block] + "/" + self.waldoimagesfolder
+            self.waldomaskpath = self.waldopath + self.waldotarget[block] + "/" + self.waldomasksfolder
+
             # read all images from  target character
             self.waldoimages = listdir(self.waldoimagepath)  # read available images
             shuffle(self.waldoimages)  # shuffle images inplace
-            
-            ntrialperblock = int(floor(len(self.waldoimages)/self.blocks)) # number of images in a block
-            trials = int(ntrialperblock*self.blocks) # total number of trials
-            
+
+            ntrialperblock = int(floor(len(self.waldoimages) / self.blocks))  # number of images in a block
+            trials = int(ntrialperblock * self.blocks)  # total number of trials
+
             # which target?
-            thistarget = self.waldotarget[block] # target in this block
-            print thistarget
-            print trials
-            
+            thistarget = self.waldotarget[block]  # target in this block
+            print(thistarget)
+            print(trials)
+
             for trial in range(trials):
 
                 if trial % ntrialperblock == 0:  # number of trials divided by trials per block (zero every block)
@@ -389,8 +395,8 @@ class Main(LatentModule):
                 showthisimage = self.waldoimages[trial]  # indicate which image to show
                 usethismask = showthisimage[0:len(showthisimage) - 4] + '_mask.png'  # corresponding mask
 
-                print showthisimage
-                print usethismask
+                print(showthisimage)
+                print(usethismask)
 
                 # log image
                 self.log(block + 1, trial + 1, showthisimage)
@@ -407,19 +413,26 @@ class Main(LatentModule):
                 # show the target character - first show a flashing rectangle and send a marker to LSL
                 self.marker(self.waldotarget[block])
                 self.photomarker("target")
-                self.picture(self.waldopath+thistarget+"/"+thistarget+'_b.png',
+                self.picture(self.waldopath + thistarget + "/" + thistarget + '_b.png',
                              duration=self.target_time, pos=[0, 0, 0], scale=[0.126, 1, 0.2],
                              color=self.photomarkerColour, block=True)
 
                 # Show a circle in a random position and wait until the user has fixated it
-                pos = [uniform(-self.margin*self.scene_ar, self.margin*self.scene_ar),
+                pos = [uniform(-self.margin * self.scene_ar, self.margin * self.scene_ar),
                        uniform(-self.margin, self.margin)]
                 self.marker("dot")
                 self.circleOn(pos=pos)
-                self.wait4fixation(gaze_inlet=inlet, duration=self.fixation_time, max_duration=self.image_time,
+                bff = time()
+                self.wait4fixation(gaze_inlet=inlet,
+                                   fix_duration=self.fixation_time, max_duration=self.image_time,
                                    location=pos, scene_coord=True, radius=.15)
-                self.circleOff()
 
+                print("duration until fixation: ", time() - bff)
+                self.circleOff()
+                if self.show_cursor:
+                    self.removeCursor()
+
+                # continue
                 # show the book image to search for the character
                 # Load the mask image
                 maskfile = Image.open(self.waldomaskpath + usethismask)
@@ -438,10 +451,10 @@ class Main(LatentModule):
                 if self.show_mask:
                     msk_obj = self.picture(self.waldomaskpath + usethismask, duration=self.image_time, pos=[0, 0, 0],
                                            scale=[self.scene_ar, 1, 1], color=[1, 1, 1, 0.2], block=False)
-
-                self.wait4fixation(gaze_inlet=inlet, duration=self.fixation_time, max_duration=self.image_time,
+                bff = time()
+                self.wait4fixation(gaze_inlet=inlet, fix_duration=self.fixation_time, max_duration=self.image_time,
                                    mask_array=mask_image_array)
-                # inlet.flush()
+                print("Duration until fixation: ", time() - bff)
 
                 if self.show_cursor:
                     self.removeCursor()
@@ -452,7 +465,7 @@ class Main(LatentModule):
                     img_obj.destroy()
                     if self.show_mask:
                         msk_obj.destroy()
-                self.sleep(1.0 / self.framerate)
+                # self.sleep(1.0 / self.game_framerate)
 
                 # wait before going to the next image
                 self.marker("blank")
@@ -521,9 +534,10 @@ class Main(LatentModule):
         # flashing coloured square to be picked up by photo sensor
         position = self.photomarkerPosition if position is None else position
 
-        ar = base.getAspectRatio()
+        ar = self.scene_ar
         sc = self.photomarkerScale
 
+        rect = [0, 0, 0, 0]
         if position == "tl":
             rect = [-ar, sc - ar, 1, 1 - sc]
         elif position == "ll":
@@ -546,5 +560,5 @@ class Main(LatentModule):
             logfile.close()
 
     def exit(self):
-        print "Exiting..."
+        print("Exiting...")
         exit()
