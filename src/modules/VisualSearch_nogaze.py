@@ -104,6 +104,7 @@ class Main(LatentModule):
 
         self.circle_file = "./media/circle.png"
         self.circleTime = [0.5, 0.9]  # duration range in seconds that the crosshair is visible before each block
+        self.circleScale = 0.05  # size of the circle
         self.circleColour = (.5, .5, .5, 1)  # colour of the crosshair
         self.margin = 0.8
         self.circleScale = 0.05  # size of the circle
@@ -114,7 +115,7 @@ class Main(LatentModule):
         self.currenttrial = 0  # main index for trials
 
         self.cursor = None
-        self.cursorAlpha = 0
+        self.cursorAlpha = 0.0
         self.cursorScale = 0.05
         self.cursorPos = (0, 0, 0)
         self.cursorColor = (0.92, 0.04, 0.56)
@@ -375,7 +376,8 @@ class Main(LatentModule):
             
             # which target?
             thistarget = self.waldotarget[block] # target in this block
-            print (thistarget)
+            print thistarget
+            print trials
             
             for trial in range(trials):
 
@@ -431,10 +433,10 @@ class Main(LatentModule):
                 self.photomarker("image")
                 time_before_image = time()
                 img_obj = self.picture(self.waldoimagepath + showthisimage, duration=self.image_time, pos=[0, 0, 0],
-                                       scale=[self.scene_ar, 1, 1], block=False)
+                                       scale=[self.scene_ar, 1, 1], color=[1, 1, 1, 1], block=False)
                 if self.show_mask:
                     msk_obj = self.picture(self.waldomaskpath + usethismask, duration=self.image_time, pos=[0, 0, 0],
-                                           scale=[self.scene_ar, 1, 1], color=[1, 1, 1, 0.2], block=False)
+                                           scale=[self.scene_ar, 1, 1], color=[1, 1, 1, 0], block=False)
 
                 self.wait4fixation(gaze_inlet=inlet, duration=self.fixation_time, max_duration=self.image_time,
                                    mask_array=mask_image_array)
