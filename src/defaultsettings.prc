@@ -4,7 +4,8 @@
 win-origin 0 0
 #win-origin 1920 0
 #win-origin 1120 50
-win-size 800 600
+#win-size 800 600
+win-size 1920 1200
 # win-size 1080 1080
 # win-size 2560 1080
 fullscreen #f
