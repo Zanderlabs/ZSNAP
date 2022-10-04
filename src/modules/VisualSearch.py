@@ -130,7 +130,16 @@ class Main(LatentModule):
         return (2 * x / self.scene_sx - 1) * self.scene_ar, -2 * y / self.scene_sy + 1
 
     def screen2image(self, x, y, im_width, im_height):
-        return int(float(x) / self.scene_sx * im_width), int(float(y) / self.scene_sy * im_height)
+        x = int(float(x) / self.scene_sx * im_width)
+        y = int(float(y) / self.scene_sy * im_height)
+
+        # bound the indices to [0, im_width-1] and [0, im_height - 1]
+        x = 0 if x < 0 else x
+        x = im_width - 1 if x >= im_width else x
+        y = 0 if y < 0 else y
+        y = im_height - 1 if y >= im_height else y
+
+        return x, y
 
     def waitForUser(self):
         # waiting for user to be ready
