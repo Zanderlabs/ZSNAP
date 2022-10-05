@@ -133,11 +133,11 @@ class Main(LatentModule):
         x = int(float(x) / self.scene_sx * im_width)
         y = int(float(y) / self.scene_sy * im_height)
 
-        # bound the indices to [0, im_width-1] and [0, im_height - 1]
-        x = 0 if x < 0 else x
-        x = im_width - 1 if x >= im_width else x
-        y = 0 if y < 0 else y
-        y = im_height - 1 if y >= im_height else y
+        # # bound the indices to [0, im_width-1] and [0, im_height - 1]
+        # x = 0 if x < 0 else x
+        # x = im_width - 1 if x >= im_width else x
+        # y = 0 if y < 0 else y
+        # y = im_height - 1 if y >= im_height else y
 
         return x, y
 
