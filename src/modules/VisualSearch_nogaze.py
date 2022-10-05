@@ -49,8 +49,8 @@ class Main(LatentModule):
         self.scene_sy = float(base.win.getYSize())
         self.scene_ar = float(self.scene_sx / self.scene_sy)
 
-        self.show_cursor = False
-        self.show_mask = False
+        self.show_cursor = True
+        self.show_mask = True
         self.fill_nans = True
         self.fill_2much_ratio = 2
 
@@ -133,8 +133,8 @@ class Main(LatentModule):
         return (2 * x / self.scene_sx - 1) * self.scene_ar, -2 * y / self.scene_sy + 1
 
     def screen2image(self, x, y, im_width, im_height):
-        x = int(float(x) / self.scene_sx * im_width)
-        y = int(float(y) / self.scene_sy * im_height)
+        x = int(floor(float(x) / self.scene_sx * im_width))
+        y = int(floor(float(y) / self.scene_sy * im_height))
 
         # # bound the indices to [0, im_width-1] and [0, im_height - 1]
         # x = 0 if x < 0 else x
