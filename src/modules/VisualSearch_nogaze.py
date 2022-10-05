@@ -63,9 +63,10 @@ class Main(LatentModule):
         self.waldotarget = ["ch1", "ch2", "ch3", "ch4"]
         # random order of targets
         shuffle(self.waldotarget)
-        self.blocks = 5  # number of blocks
-
-        self.moduleName = "VisualSearch"
+        self.trials = 45 # total number of trials per character
+        self.blocks = 3  # number of blocks
+        
+        self.moduleName = "VisualSearch_exp"
 
         self.backgroundColour = (0, 0, 0, 1)  # background colour
 
@@ -83,6 +84,7 @@ class Main(LatentModule):
 
         self.target_time = 1  # duration on screen
         self.image_time = 20  # maximum trial duration in seconds (to skip a trial)
+        self.circle_time = 6 # maximum duration of fixation dot
         self.blank_time = [3, 3.5]  # the blank time
         self.fixation_time = 1  # time in seconds for a fixation to be concluded
 
@@ -92,6 +94,7 @@ class Main(LatentModule):
         self.textBgColour = (0, 0, 0, .75)  # text background colour
         self.textPressSpace = "Press space to continue"  # text to display at user prompts
         self.textExperimentEnd = "End of this part"  # text to display at the end of the experiment
+        self.textRecalibrate = "Character block ended, please recalibrate and press space" # text to recalibrate
 
         self.photomarkerColour = (1, 1, 1, 1)  # photo marker colour = full white
         self.photomarkerScale = .1  # photo marker scale = 10%
@@ -99,12 +102,12 @@ class Main(LatentModule):
         self.photomarkerPosition = "lr"  # default photo marker position, where to show it
         # tl = top left # ll = lower left # tr = top right # lr = lower right
 
-        self.crossTime = [0.5, 0.9]  # duration range in seconds that the crosshair is visible before each block
+        self.crossTime = [0.6, 0.9]  # duration range in seconds that the crosshair is visible before each block
         self.crossColour = (.5, .5, .5, 1)  # colour of the crosshair
         self.crossScale = 0.15  # size of the crosshair
 
         self.circle_file = "./media/circle.png"
-        self.circleTime = [0.5, 0.9]  # duration range in seconds that the crosshair is visible before each block
+        #self.circleTime = [0.5, 0.9]  # duration range in seconds that the crosshair is visible before each block
         self.circleScale = 0.05  # size of the circle
         self.circleColour = (.5, .5, .5, 1)  # colour of the crosshair
         self.margin = 0.8
@@ -232,7 +235,7 @@ class Main(LatentModule):
             self.cursor = None
 
     def wait4fixation(self, gaze_inlet, fix_duration, max_duration, fix_threshold=0.9, check_every=0.1,
-                      mask_array=None, location=(0, 0), radius=0.05, scene_coord=True):
+                      mask_array=None, location=(0, 0), radius=0.05, scene_coord=True, marker_type=""):
         fix_frames = self.gaze_framerate * fix_duration
         deq = deque(maxlen=fix_frames)
         gaze_inlet.flush()
@@ -310,14 +313,14 @@ class Main(LatentModule):
 
                         if sum(mask_array[data[:, 1], data[:, 0]]) > fix_threshold * fix_frames:
                             print("Fixation found, going to the next task")
-                            self.marker("fixation")
+                            self.marker("fixation"+marker_type)
                             return True
                     else:
                         dists = np.linalg.norm(data - location, axis=1)
                         # print(np.sum(dists < radius), " / ", limit * fix_frames)
                         if np.sum(dists < radius) > fix_threshold * fix_frames:
                             print("Fixation found, going to the next task")
-                            self.marker("fixation")
+                            self.marker("fixation"+marker_type)
                             return True
 
         return False
@@ -386,6 +389,9 @@ class Main(LatentModule):
             self.waldoimages = listdir(self.waldoimagepath)  # read available images
             shuffle(self.waldoimages)  # shuffle images inplace
 
+            #truncate file list 
+            self.waldoimages = self.waldoimages[0:self.trials]
+            
             ntrialperblock = int(floor(len(self.waldoimages) / self.blocks))  # number of images in a block
             trials = int(ntrialperblock * self.blocks)  # total number of trials
 
@@ -414,7 +420,7 @@ class Main(LatentModule):
                 # run next trial
                 # ##########################
                 # Show the cross in the middle of the screen where the target will show up
-                self.marker("cross")
+                self.photomarker("cross")
                 self.crossOn(pos=[0, 0])
                 self.sleep(uniform(self.crossTime[0], self.crossTime[1]))
                 self.crossOff()
@@ -429,12 +435,13 @@ class Main(LatentModule):
                 # Show a circle in a random position and wait until the user has fixated it
                 pos = [uniform(-self.margin * self.scene_ar, self.margin * self.scene_ar),
                        uniform(-self.margin, self.margin)]
-                self.marker("dot")
+                self.marker("dot:"+str(pos[0])+":"+str(pos[1]))
+                self.photomarker("dot")
                 self.circleOn(pos=pos)
                 bff = time()
                 self.wait4fixation(gaze_inlet=inlet,
-                                   fix_duration=self.fixation_time, max_duration=self.image_time,
-                                   location=pos, scene_coord=True, radius=.15)
+                                   fix_duration=self.fixation_time, max_duration=self.circle_time,
+                                   location=pos, scene_coord=True, radius=.15, marker_type="dot")
 
                 print("duration until fixation: ", time() - bff)
                 self.circleOff()
@@ -462,7 +469,7 @@ class Main(LatentModule):
                                            scale=[self.scene_ar, 1, 1], color=[1, 1, 1, 0.2], block=False)
                 bff = time()
                 self.wait4fixation(gaze_inlet=inlet, fix_duration=self.fixation_time, max_duration=self.image_time,
-                                   mask_array=mask_image_array)
+                                   mask_array=mask_image_array, marker_type="image")
                 print("duration until fixation: ", time() - bff)
 
                 if self.show_cursor:
@@ -480,6 +487,14 @@ class Main(LatentModule):
                 self.marker("blank")
                 self.sleep(uniform(self.blank_time[0], self.blank_time[1]))
                 self.cursorPos = (0, 0, 0)
+                
+            self.write(
+            text="\1text\1" + self.textRecalibrate, 
+            font=self.fontFace,
+            scale=self.textScale,
+            fg=self.textColour,
+            bg=self.textBgColour,
+            duration='space')     
 
         """ end main loop """
         # end of experiment
