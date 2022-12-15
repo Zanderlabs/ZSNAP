@@ -133,8 +133,18 @@ Original Comments
 > 	- dwh
 """
 
-import math, re, socket, select, string, struct, sys, threading, time, types
+import math
+import re
+import select
+import socket
+# import string
+import struct
+import sys
+import threading
+import time
+import types
 from socketserver import UDPServer, DatagramRequestHandler, ThreadingMixIn
+
 if not sys.platform.startswith("win"):
 	from socketserver import ForkingMixIn
 
@@ -747,7 +757,7 @@ def OSCTimeTag(time):
 def _readString(data):
 	"""Reads the next (null-terminated) block of data
 	"""
-	length   = string.find(data,"\0")
+	length   = str.find(data, "\0")
 	nextData = int(math.ceil((length+1) / 4.0) * 4)
 	return (data[0:length], data[nextData:])
 
@@ -1219,7 +1229,7 @@ def getFilterStr(filters):
 	return out
 
 # A translation-table for mapping OSC-address expressions to Python 're' expressions
-OSCtrans = string.maketrans("{,}?","(|).")
+OSCtrans = str.maketrans("{,}?","(|).")
 
 def getRegEx(pattern):
 	"""Compiles and returns a 'regular expression' object for the given address-pattern.
