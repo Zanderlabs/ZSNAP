@@ -142,10 +142,10 @@ global version
 version = ("0.3", "5b", "$Rev: 5294 $"[6:-2])
 
 global FloatTypes
-FloatTypes = [types.FloatType]
+FloatTypes = [float]
 
 global IntTypes
-IntTypes = [types.IntType]
+IntTypes = [int]
 
 ##
 # numpy/scipy support:
