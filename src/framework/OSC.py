@@ -134,7 +134,7 @@ Original Comments
 """
 
 import math, re, socket, select, string, struct, sys, threading, time, types
-from SocketServer import UDPServer, DatagramRequestHandler, ForkingMixIn, ThreadingMixIn
+from socketserver import UDPServer, DatagramRequestHandler, ForkingMixIn, ThreadingMixIn
 
 global version
 version = ("0.3","5b", "$Rev: 5294 $"[6:-2])
