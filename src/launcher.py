@@ -176,8 +176,8 @@ from panda3d.core import loadPrcFile, loadPrcFileData, Filename, DSearchPath, VB
 import framework.tickmodule
 import threading
 # network support
-import Queue
-import SocketServer
+import queue
+import socketserver
 print("done.")
 
 print("Applying the engine configuration file/settings...")
@@ -260,7 +260,7 @@ class MainApp(ShowBase):
         self._module = None              # the currently loaded module
         self._instance = None            # instance of the module's Main class
         self._executing = False          # whether we are executing the module
-        self._remote_commands = Queue.Queue() # a message queue filled by the TCP server
+        self._remote_commands = queue.Queue() # a message queue filled by the TCP server
         self._opts = opts                # the configuration options
         self._console = None             # graphical console, if any
         
@@ -465,7 +465,7 @@ class MainApp(ShowBase):
                         self.load_config(cmd[7:]+".cfg")
                     else:
                         self.load_config(cmd[7:])
-        except Queue.Empty:
+        except queue.Empty:
             pass
 
         # tick the current module
