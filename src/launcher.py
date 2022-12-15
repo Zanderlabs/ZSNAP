@@ -37,6 +37,7 @@ The SNAP experiment launcher program. To be run on the subject's PC.
     
 '''
 from __future__ import with_statement
+# from __future__ import print_function
 import optparse, sys, os, fnmatch, traceback, time
 from framework.OSC import OSCClient, OSCMessage
 
@@ -112,11 +113,11 @@ OSC_VOLUME = -33.0
 # --- Startup Initialization ---
 # ------------------------------
 
-print 'This is SNAP version ' + SNAP_VERSION + "\n\n"
+print('This is SNAP version ' + SNAP_VERSION + "\n\n")
 
 # --- Parse console arguments ---
 
-print 'Reading command-line options...'
+print('Reading command-line options...')
 parser = optparse.OptionParser()
 parser.add_option("-m", "--module", dest="module", default=LOAD_MODULE,
                   help="Experiment module to load upon startup (see modules). Can also be a .cfg file of a study (see studies and --studypath).")
@@ -158,14 +159,14 @@ parser.add_option("-i","--idosc", dest="idosc", default='0',
 
 # --- Pre-engine initialization ---
 
-print 'Performing pre-engine initialization...'
+print('Performing pre-engine initialization...')
 import socket
 from framework.eventmarkers.eventmarkers import send_marker, init_markers, shutdown_markers
 init_markers(opts.labstreaming,False,opts.datariver,int(opts.comport),socket.gethostname() + "_" + opts.module)
 
 # --- Engine initialization ---
 
-print 'Loading the Panda3d engine...',
+print('Loading the Panda3d engine...')
 # panda3d support
 from direct.showbase.ShowBase import ShowBase
 from direct.task.Task import Task
@@ -177,9 +178,9 @@ import threading
 # network support
 import Queue
 import SocketServer
-print "done."
+print("done.")
 
-print "Applying the engine configuration file/settings..."
+print("Applying the engine configuration file/settings...")
 
 # load the selected engine configuration (studypath takes precedence over the SNAP root path)
 config_searchpath = DSearchPath()
@@ -207,12 +208,12 @@ if opts.nomousecursor is not None:
 # init OSC sound
 oscclient = None
 if opts.oscsound:
-    print "Loading sound system..."
+    print("Loading sound system...")
     oscclient = {}
     for m in OSC_MACHINE_IP.keys():
         # there are multiple machines responsible for sound playback over different speaker groups:
         # connect to each of them
-        print "Connecting to", m, "(" + OSC_MACHINE_IP[m] + ")..."
+        print("Connecting to", m, "(" + OSC_MACHINE_IP[m] + ")...")
         try:
             oscclient[m] = OSCClient()
             # hack in some management for the assining numbers to sources...
@@ -228,7 +229,7 @@ if opts.oscsound:
             oscclient[m].projectname = 'SCCN'
             oscclient[m].connect((OSC_MACHINE_IP[m],15003))
             if opts.idosc == '1':
-                print "sending OSC master commands..."
+                print("sending OSC master commands...")
                 msg = OSCMessage("/AM/Load"); msg += ["/"+oscclient[m].projectname]; oscclient[m].send(msg)
                 # wait a few seconds...
                 time.sleep(4)
@@ -239,9 +240,9 @@ if opts.oscsound:
                 msg = OSCMessage("/"+oscclient[m].projectname+"/surround/2/point"); msg += [0,"stop"]; oscclient[m].send(msg)
                 msg = OSCMessage("/"+oscclient[m].projectname+"/array/1/point"); msg += [0,"stop"]; oscclient[m].send(msg)
                 msg = OSCMessage("/"+oscclient[m].projectname+"/array/2/point"); msg += [0,"stop"]; oscclient[m].send(msg)
-            print "success."
-        except Exception, e:
-            print "failed:" + e
+            print("success.")
+        except Exception as e:
+            print("failed:" + e)
 
 global is_running
 is_running = True
@@ -309,7 +310,7 @@ class MainApp(ShowBase):
     def load_module(self,name):
         """Try to load the given module, if any. The module can be in any folder under modules."""
         if name is not None and len(name) > 0:
-            print 'Importing experiment module "' + name + '"...',            
+            print('Importing experiment module "' + name + '"...')
             # find it under modules...
             locations = []
             for root, dirnames, filenames in os.walk('modules'):
@@ -324,72 +325,72 @@ class MainApp(ShowBase):
                 try:
                     # import it
                     self._module = __import__(name)
-                    print 'done.'
+                    print('done.')
                     # instantiate the main class 
-                    print "Instantiating the module's Main class...",
+                    print("Instantiating the module's Main class...",)
                     self._instance = self._module.Main()
                     self._instance._make_up_for_lost_time = self._opts.timecompensation
                     self._instance._oscclient = oscclient
-                    print 'done.'
-                except ImportError,e:
-                    print "The experiment module '"+ name + "' could not be imported correctly. Make sure that its own imports are properly found by Python; reason:"
-                    print e
+                    print('done.')
+                except ImportError as e:
+                    print("The experiment module '"+ name + "' could not be imported correctly. Make sure that its own imports are properly found by Python; reason:")
+                    print(e)
                     traceback.print_exc()
                     
             elif len(locations) == 0:
-                print "The module named '" + name + "' was not found in the modules folder or any of its sub-folders."                    
+                print("The module named '" + name + "' was not found in the modules folder or any of its sub-folders."      )
             else:
-                print "The module named '" + name + "' was found in multiple sub-folders of the modules folder; make sure that you are not using a duplicate name."                    
+                print("The module named '" + name + "' was found in multiple sub-folders of the modules folder; make sure that you are not using a duplicate name.")
 
 
     def load_config(self,name):
         """Try to load a study config file (see studies directory)."""
-        print 'Attempting to load config "'+ name+ '"...'
+        print('Attempting to load config "'+ name+ '"...')
         file = os.path.join(self._opts.studypath,name)
         try:
             if not os.path.exists(file):
-                print 'file "' + file + '" not found.'
+                print('file "' + file + '" not found.')
             else:
                 with open(file,'r') as f:
                     self.load_module(f.readline().strip())
-                    print 'Now setting variables...',
+                    print('Now setting variables...',)
                     for line in f.readlines():
-                        exec line in self._instance.__dict__
-                    print 'done; config is loaded.'
-        except Exception,e:
-            print 'Error while loading the study config file "' + file + '".'
-            print e
+                        exec(line in self._instance.__dict__)
+                    print('done; config is loaded.')
+        except Exception as e:
+            print('Error while loading the study config file "' + file + '".')
+            print(e)
             traceback.print_exc()
             
     # start executing the currently loaded module
     def start_module(self):        
         if self._instance is not None:
             self.cancel_module()
-            print 'Starting module execution...',
+            print('Starting module execution...',)
             self._instance.start()
-            print 'done.'
+            print('done.')
             self._executing = True
 
 
     # cancel executing the currently loaded module (may be started again later)
     def cancel_module(self):
         if (self._instance is not None) and self._executing:
-            print 'Canceling module execution...',
+            print('Canceling module execution...',)
             self._instance.cancel()
-            print 'done.'
+            print('done.')
         self._executing = False
 
              
     # prune a currently loaded module's resources
     def prune_module(self):
         if (self._instance is not None):
-            print "Pruning current module's resources...",
+            print("Pruning current module's resources...",)
             try:
                 self._instance.prune()
-            except Exception, inst:
-                print "Exception during prune:"
-                print inst
-            print 'done.'
+            except Exception as inst:
+                print("Exception during prune:")
+                print(inst)
+            print('done.')
 
             
     # --- internal ---
@@ -400,27 +401,27 @@ class MainApp(ShowBase):
         class ThreadedTCPRequestHandler(SocketServer.StreamRequestHandler):
             def handle(self):
                 try:
-                    print "Client connection opened."
+                    print("Client connection opened.")
                     while True:
                         data = self.rfile.readline().strip()
                         if len(data)==0:
                             break                        
                         destination.put(data)
                 except:
-                    print "Connection closed by client."
+                    print("Connection closed by client.")
 
         class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
             pass
 
-        print "Bringing up remote-control server on port", port, "...",
+        print("Bringing up remote-control server on port", port, "...",)
         try:
             server = ThreadedTCPServer(("", port),ThreadedTCPRequestHandler)
             server_thread = threading.Thread(target=server.serve_forever)
             server_thread.setDaemon(True)
             server_thread.start()
-            print "done."
+            print("done.")
         except:
-            print "failed; the port is already taken (probably the previous process is still around)."
+            print("failed; the port is already taken (probably the previous process is still around).")
     
   
     # init a console that is scoped to the current module
@@ -428,13 +429,13 @@ class MainApp(ShowBase):
         """Initialize a pull-down console. Note that this console is a bit glitchy -- use at your own risk."""
         if self._console is None:
             try:
-                print "Initializing console...",
+                print("Initializing console...",)
                 from framework.console.interactiveConsole import pandaConsole, INPUT_CONSOLE, INPUT_GUI, OUTPUT_PYTHON
                 self._console = pandaConsole(INPUT_CONSOLE|INPUT_GUI|OUTPUT_PYTHON, self._instance.__dict__)
-                print "done."
-            except Exception, inst:
-                print "failed:"
-                print inst
+                print("done.")
+            except Exception as inst:
+                print("failed:")
+                print(inst)
 
 
     # main loop step, ticked every frame
@@ -456,7 +457,7 @@ class MainApp(ShowBase):
                     self.load_module(cmd[5:])
                 elif cmd.startswith("setup "):
                     try:
-                        exec cmd[6:] in self._instance.__dict__
+                        exec(cmd[6:] in self._instance.__dict__)
                     except:
                         pass
                 elif cmd.startswith("config "):
@@ -493,8 +494,8 @@ try:
         app.taskMgr.step()
         #framework.tickmodule.engine_lock.release()
         framework.tickmodule.shared_lock.release()
-except Exception,e:
-    print 'Error in main loop: ', e
+except Exception as e:
+    print('Error in main loop: ', e)
     traceback.print_exc()
 
 
@@ -503,5 +504,5 @@ except Exception,e:
 # --- Finalization and cleanup ---
 # --------------------------------
 
-print 'Terminating launcher...'
+print('Terminating launcher...')
 shutdown_markers()
