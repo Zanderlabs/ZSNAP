@@ -27,22 +27,23 @@ def init_markers(lsl,logfile,datariver,serialport,uid):
             info = pylsl.stream_info("SNAP-Markers","Markers",1,0,pylsl.cf_string,"SNAPmarkers-" + uid)
             lsl_backend = pylsl.stream_outlet(info)
             lsl_backend.pylsl = pylsl
-            print "The lab streaming layer is ready for sending markers."
+            print("The lab streaming layer is ready for sending markers.")
         except:
-            print "Error initializing the lab streaming layer backend. You will not be able to send and record event markers via LSL."
+            print("Error initializing the lab streaming layer backend. "
+                  "You will not be able to send and record event markers via LSL.")
             
     if logfile:
         try:
             # find a new slot for the logfiles
-            for k in xrange(10000):
+            for k in range(10000):
                 fname = 'logs/markerlog-' + str(k) + '.log'
                 if not os.path.exists(fname):
                     global marker_log
                     marker_log = open(fname,'w')
                     break
-            print "A marker logfile has been prepared for logging."
+            print("A marker logfile has been prepared for logging.")
         except:
-            print "Error initializing the marker logging. Your event markers will not be logged into a file."
+            print("Error initializing the marker logging. Your event markers will not be logged into a file.")
 
     if datariver:
         try:
@@ -50,9 +51,10 @@ def init_markers(lsl,logfile,datariver,serialport,uid):
             import framework.eventmarkers.datariver_backend
             river_backend = framework.eventmarkers.datariver_backend
             river_backend.send_marker(int(999))
-            print "DataRiver has been loaded successfully for sending markers."
+            print("DataRiver has been loaded successfully for sending markers.")
         except:
-            print "Error initializing the DataRiver backend. You will not be able to send and record event markers via DataRiver."
+            print("Error initializing the DataRiver backend. "
+                  "You will not be able to send and record event markers via DataRiver.")
 
     if serialport:
         try:
@@ -66,10 +68,11 @@ def init_markers(lsl,logfile,datariver,serialport,uid):
             serial_port = serial.Serial(port=serialport-1, timeout=TIMEOUT, 
                                         bytesize=BYTESIZE, baudrate=BAUDRATE,
                                         parity=PARITY, stopbits=STOPBITS)
-            print "Serial port interface has been loaded successfully for sending markers."
-        except Exception,e:
-            print "Error initializing the Serial port interface. You will not be able to send and record event markers through it."
-            print "Reason: ", e
+            print("Serial port interface has been loaded successfully for sending markers.")
+        except Exception as e:
+            print("Error initializing the Serial port interface. "
+                  "You will not be able to send and record event markers through it.")
+            print(("Reason: ", e))
             traceback.print_exc()
 
 def send_marker(markercode):
