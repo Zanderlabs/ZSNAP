@@ -134,7 +134,9 @@ Original Comments
 """
 
 import math, re, socket, select, string, struct, sys, threading, time, types
-from socketserver import UDPServer, DatagramRequestHandler, ForkingMixIn, ThreadingMixIn
+from socketserver import UDPServer, DatagramRequestHandler, ThreadingMixIn
+if not sys.platform.startswith("win"):
+	from socketserver import ForkingMixIn
 
 global version
 version = ("0.3","5b", "$Rev: 5294 $"[6:-2])
@@ -2260,12 +2262,15 @@ class OSCServer(UDPServer):
 		if addr_cmd in ('unsubscribe', 'silence', 'nosend', 'deltarget'):
 			return self._unsubscribe(data, client_address)
 
-class ForkingOSCServer(ForkingMixIn, OSCServer):
-	"""An Asynchronous OSCServer.
-	This server forks a new process to handle each incoming request.
-	""" 
-	# set the RequestHandlerClass, will be overridden by ForkingOSCServer & ThreadingOSCServer
-	RequestHandlerClass = ThreadingOSCRequestHandler
+
+if not sys.platform.startswith("win"):
+	class ForkingOSCServer(ForkingMixIn, OSCServer):
+		"""An Asynchronous OSCServer.
+		This server forks a new process to handle each incoming request.
+		"""
+		# set the RequestHandlerClass, will be overridden by ForkingOSCServer & ThreadingOSCServer
+		RequestHandlerClass = ThreadingOSCRequestHandler
+
 
 class ThreadingOSCServer(ThreadingMixIn, OSCServer):
 	"""An Asynchronous OSCServer.
