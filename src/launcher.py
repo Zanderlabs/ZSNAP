@@ -336,13 +336,13 @@ class MainApp(ShowBase):
 
     def set_defaults(self):
         """Sets some environment defaults that might be overridden by the modules."""
-        font = loader.loadFont('arial.ttf', textureMargin=5)
+        font = self.loader.loadFont('arial.ttf', textureMargin=5)
         font.setPixelsPerUnit(128)
-        base.win.setClearColorActive(True)
-        base.win.setClearColor((0.3, 0.3, 0.3, 1))
+        self.win.setClearColorActive(True)
+        self.win.setClearColor((0.3, 0.3, 0.3, 1))
         winprops = WindowProperties()
         winprops.setTitle('SNAP')
-        base.win.requestProperties(winprops)
+        self.win.requestProperties(winprops)
 
     def load_module(self, name):
         """Try to load the given module, if any. The module can be in any folder under modules."""
