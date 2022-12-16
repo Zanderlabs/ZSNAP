@@ -419,9 +419,9 @@ class LatentModule(framework.tickmodule.TickModule, framework.basicstimuli.Basic
                     # invoke tick
                     t.tick()
 
-        except Exception, inst:
-            print "Exception during tick():"
-            print inst
+        except Exception as inst:
+            print("Exception during tick():")
+            print(inst)
             traceback.print_exc()
             raise
         finally:
@@ -458,9 +458,9 @@ class LatentModule(framework.tickmodule.TickModule, framework.basicstimuli.Basic
         except self.ModuleCancelled:
             # the ModuleCancelled exception is used to forcibly exit the run() funcion 
             pass
-        except Exception,e:
-            print "Exception during run():"
-            print e
+        except Exception as e:
+            print("Exception during run():")
+            print(e)
             traceback.print_exc()
         finally:
             # make sure that we release the lock and reset the state
