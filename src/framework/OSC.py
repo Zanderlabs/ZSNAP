@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 """
 This module contains an OpenSoundControl implementation (in Pure Python), based (somewhat) on the 
 good old 'SimpleOSC' implementation by Daniel Holth & Clinton McChesney.
@@ -337,7 +337,7 @@ class OSCMessage(object):
         out = list(values)
         out.extend(self.values())
 
-        if type(values) == types.TupleType:
+        if isinstance(values, tuple):
             return tuple(out)
 
         return out
@@ -392,14 +392,14 @@ class OSCMessage(object):
     def _buildItemList(self, values, typehint=None):
         if isinstance(values, OSCMessage):
             items = values.items()
-        elif type(values) == types.ListType:
+        elif isinstance(values, list):
             items = []
             for val in values:
-                if type(val) == types.TupleType:
+                if isinstance(val, tuple):
                     items.append(val[:2])
                 else:
                     items.append((typehint, val))
-        elif type(values) == types.TupleType:
+        elif isinstance(values, tuple):
             items = [values[:2]]
         else:
             items = [(typehint, values)]
@@ -415,7 +415,7 @@ class OSCMessage(object):
 
         new_items = self._buildItemList(val)
 
-        if type(i) != types.SliceType:
+        if not isinstance(i, slice):
             if len(new_items) != 1:
                 raise TypeError("single-item assignment expects a single value or a (typetag, value) tuple")
 
@@ -616,7 +616,7 @@ class OSCBundle(OSCMessage):
             binary = OSCBlob(argument.getBinary())
         else:
             msg = OSCMessage(self.address)
-            if type(argument) == types.DictType:
+            if isinstance(argument, dict):
                 if 'addr' in argument:
                     msg.setAddress(argument['addr'])
                 if 'args' in argument:
@@ -701,9 +701,9 @@ def OSCBlob(next):
     The blob ends with 0 to 3 zero-bytes ('\x00')
     """
 
-    if type(next) in types.StringTypes:
+    if isinstance(next, str):
         OSCblobLength = math.ceil((len(next)) / 4.0) * 4
-        binary = struct.pack(">i%ds" % (OSCblobLength), OSCblobLength, next)
+        binary = struct.pack(">i%ds" % OSCblobLength, OSCblobLength, next)
     else:
         binary = ""
 
@@ -1026,7 +1026,7 @@ class OSCClient(object):
         """
         self.socket = None
 
-        if server == None:
+        if server is None:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, self.sndbuf_size)
             self._fd = self.socket.fileno()
