@@ -1,9 +1,10 @@
+import math
 import direct.gui
 import direct.showbase
 import pandac.PandaModules
-import framework.eventmarkers.eventmarkers
-import math
-from OSC import OSCClient,OSCMessage
+from framework.eventmarkers import eventmarkers
+from framework.OSC import OSCClient, OSCMessage
+
 
 class BasicStimuli:
     """
@@ -42,7 +43,7 @@ class BasicStimuli:
         Emit a marker. The markercode can be a string or a number. 
         Side note: strings will not work if a legacy marker sending protocol is enabled (such as DataRiver or the parallel port).
         """
-        framework.eventmarkers.eventmarkers.send_marker(markercode)
+        eventmarkers.eventmarkers.send_marker(markercode)
     
     
     def write(self, 
@@ -324,9 +325,9 @@ class BasicStimuli:
             msg = OSCMessage(destination); msg += [id, "speed",playrate]; oscclient.send(msg)
 
             if timeoffset > 0:
-                print "Timeoffset is currently not supported in this interface"
+                print("Timeoffset is currently not supported in this interface")
             if loopcount is not None:
-                print "Loopcount is currently not supported in this interface"
+                print("Loopcount is currently not supported in this interface")
 
             # determine the length of the file so we can block for the appropriate time (and later reclaim sound ID's)
             obj = loader.loadSfx(filename)
