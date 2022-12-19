@@ -49,5 +49,5 @@ class TickModule(DirectObject):
 shared_lock = threading.RLock()
 
 # this lock is currently unused by it intended to lock the Panda3d engine from concurrent access by either
-# Tickmodules or other threads (e.g., network handlers).
+# TickModules or other threads (e.g., network handlers).
 engine_lock = threading.RLock()

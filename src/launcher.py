@@ -65,9 +65,9 @@ from direct.task.Task import Task
 from panda3d.core import loadPrcFile, loadPrcFileData, Filename, DSearchPath
 from pandac.PandaModules import WindowProperties
 
-import framework.tickmodule
-from framework.OSC import OSCClient, OSCMessage
-from framework.eventmarkers.eventmarkers import init_markers, shutdown_markers
+from framework import shared_lock
+from framework import OSCClient, OSCMessage
+from framework.eventmarkers import init_markers, shutdown_markers
 
 SNAP_VERSION = '1.02'
 
@@ -477,8 +477,8 @@ class MainApp(ShowBase):
 
     # main loop step, ticked every frame
     def _main_loop_tick(self, task):
-        # framework.tickmodule.engine_lock.release()
-        framework.tickmodule.shared_lock.release()
+        # engine_lock.release()
+        shared_lock.release()
 
         # process any queued-up remote control messages
         try:
@@ -509,8 +509,8 @@ class MainApp(ShowBase):
         if (self._instance is not None) and self._executing:
             self._instance.tick()
 
-        framework.tickmodule.shared_lock.acquire()
-        # framework.tickmodule.engine_lock.acquire()
+        shared_lock.acquire()
+        # engine_lock.acquire()
         return Task.cont
 
     def terminate(self):
@@ -526,11 +526,11 @@ class MainApp(ShowBase):
 try:
     app = MainApp(opts)
     while is_running:
-        framework.tickmodule.shared_lock.acquire()
-        # framework.tickmodule.engine_lock.acquire()
+        shared_lock.acquire()
+        # engine_lock.acquire()
         app.taskMgr.step()
-        # framework.tickmodule.engine_lock.release()
-        framework.tickmodule.shared_lock.release()
+        # engine_lock.release()
+        shared_lock.release()
 except Exception as e:
     print('Error in main loop: ', e)
     traceback.print_exc()
