@@ -5,6 +5,7 @@ Base class for all tick()-based modules.
 from direct.showbase.DirectObject import DirectObject
 import threading
 
+
 class TickModule(DirectObject):
     def __init__(self):
         """
@@ -18,6 +19,7 @@ class TickModule(DirectObject):
         to the start() function (or run() function if you're using a LatentModule) since the default values may be
         overridden by the experimenter or config files before he/she invokes start().
         """
+        super(DirectObject).__init__()
         pass
 
     # ======================
@@ -36,9 +38,9 @@ class TickModule(DirectObject):
         """ Advance the internal state of the module, called once per frame. """
         pass
 
-
     def prune(self):
-        """ Optionally prune large resources (e.g. textures) that may have been loaded during __init__ to make space for the next module. """
+        """ Optionally prune large resources (e.g. textures) that may have been loaded
+        during __init__ to make space for the next module. """
         pass
 
 
