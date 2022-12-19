@@ -254,29 +254,29 @@ if opts.oscsound:
             oscclient[m].connect((OSC_MACHINE_IP[m], 15003))
             if opts.idosc == '1':
                 print("sending OSC master commands...")
-                msg = OSCMessage("/AM/Load");
-                msg += ["/" + oscclient[m].projectname];
+                msg = OSCMessage("/AM/Load")
+                msg += ["/" + oscclient[m].projectname]
                 oscclient[m].send(msg)
                 # wait a few seconds...
                 time.sleep(4)
                 # load the default preset
-                msg = OSCMessage("/" + oscclient[m].projectname + "/system");
-                msg += ["preset", 1];
+                msg = OSCMessage("/" + oscclient[m].projectname + "/system")
+                msg += ["preset", 1]
                 oscclient[m].send(msg)
-                msg = OSCMessage("/AM/Volume");
-                msg.append(float(opts.volumeosc));
+                msg = OSCMessage("/AM/Volume")
+                msg.append(float(opts.volumeosc))
                 oscclient[m].send(msg)
-                msg = OSCMessage("/" + oscclient[m].projectname + "/surround/1/point");
-                msg += [0, "stop"];
+                msg = OSCMessage("/" + oscclient[m].projectname + "/surround/1/point")
+                msg += [0, "stop"]
                 oscclient[m].send(msg)
-                msg = OSCMessage("/" + oscclient[m].projectname + "/surround/2/point");
-                msg += [0, "stop"];
+                msg = OSCMessage("/" + oscclient[m].projectname + "/surround/2/point")
+                msg += [0, "stop"]
                 oscclient[m].send(msg)
-                msg = OSCMessage("/" + oscclient[m].projectname + "/array/1/point");
-                msg += [0, "stop"];
+                msg = OSCMessage("/" + oscclient[m].projectname + "/array/1/point")
+                msg += [0, "stop"]
                 oscclient[m].send(msg)
-                msg = OSCMessage("/" + oscclient[m].projectname + "/array/2/point");
-                msg += [0, "stop"];
+                msg = OSCMessage("/" + oscclient[m].projectname + "/array/2/point")
+                msg += [0, "stop"]
                 oscclient[m].send(msg)
             print("success.")
         except Exception as e:
@@ -371,7 +371,9 @@ class MainApp(ShowBase):
                     print('done.')
                 except ImportError as e:
                     print(
-                        "The experiment module '" + name + "' could not be imported correctly. Make sure that its own imports are properly found by Python; reason:")
+                        "The experiment module '" + name +
+                        "' could not be imported correctly. "
+                        "Make sure that its own imports are properly found by Python; reason:")
                     print(e)
                     traceback.print_exc()
 
@@ -379,7 +381,9 @@ class MainApp(ShowBase):
                 print("The module named '" + name + "' was not found in the modules folder or any of its sub-folders.")
             else:
                 print(
-                    "The module named '" + name + "' was found in multiple sub-folders of the modules folder; make sure that you are not using a duplicate name.")
+                        "The module named '" + name +
+                        "' was found in multiple sub-folders of the modules folder; "
+                        "make sure that you are not using a duplicate name.")
 
     def load_config(self, name):
         """Try to load a study config file (see studies directory)."""
@@ -419,7 +423,7 @@ class MainApp(ShowBase):
 
     # prune a currently loaded module's resources
     def prune_module(self):
-        if (self._instance is not None):
+        if self._instance is not None:
             print("Pruning current module's resources...", )
             try:
                 self._instance.prune()
