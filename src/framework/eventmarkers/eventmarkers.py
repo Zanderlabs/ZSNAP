@@ -1,8 +1,9 @@
-import time
 import os
-import socket
-import sys
+import time
 import traceback
+
+import pylsl
+from pylsl import stream_info, stream_outlet
 
 global marker_log
 marker_log = None
@@ -17,21 +18,22 @@ global serial_port
 serial_port = None
 
 
-def init_markers(lsl,logfile,datariver,serialport,uid):
+def init_markers(lsl, logfile, datariver, serialport, uid):
     """ Initialize the marker protocols to use. """
 
     if lsl:
         try:
             global lsl_backend
-            import pylsl.pylsl as pylsl
-            info = pylsl.stream_info("SNAP-Markers","Markers",1,0,pylsl.cf_string,"SNAPmarkers-" + uid)
-            lsl_backend = pylsl.stream_outlet(info)
+            info = stream_info(name="SNAP-Markers", type="Markers", channel_count=1,
+                               nominal_srate=0, channel_format=pylsl.cf_string,
+                               source_id="SNAPmarkers-" + uid)
+            lsl_backend = stream_outlet(info)
             lsl_backend.pylsl = pylsl
             print("The lab streaming layer is ready for sending markers.")
-        except:
-            print("Error initializing the lab streaming layer backend. "
+        except RuntimeError as e:
+            print(f"Error ({e}) Initializing the lab streaming layer backend failed. "
                   "You will not be able to send and record event markers via LSL.")
-            
+
     if logfile:
         try:
             # find a new slot for the logfiles
@@ -39,7 +41,7 @@ def init_markers(lsl,logfile,datariver,serialport,uid):
                 fname = 'logs/markerlog-' + str(k) + '.log'
                 if not os.path.exists(fname):
                     global marker_log
-                    marker_log = open(fname,'w')
+                    marker_log = open(fname, 'w')
                     break
             print("A marker logfile has been prepared for logging.")
         except:
@@ -65,7 +67,7 @@ def init_markers(lsl,logfile,datariver,serialport,uid):
             BAUDRATE = 57600
             PARITY = 'N'
             STOPBITS = 2
-            serial_port = serial.Serial(port=serialport-1, timeout=TIMEOUT, 
+            serial_port = serial.Serial(port=serialport - 1, timeout=TIMEOUT,
                                         bytesize=BYTESIZE, baudrate=BAUDRATE,
                                         parity=PARITY, stopbits=STOPBITS)
             print("Serial port interface has been loaded successfully for sending markers.")
@@ -75,13 +77,14 @@ def init_markers(lsl,logfile,datariver,serialport,uid):
             print(("Reason: ", e))
             traceback.print_exc()
 
+
 def send_marker(markercode):
     """Global marker sending / logging function."""
 
     global serial_port
     if serial_port is not None:
         serial_port.write(chr(markercode % 256))
-    
+
     global lsl_backend
     if lsl_backend is not None:
         lsl_backend.push_sample(lsl_backend.pylsl.vectorstr([str(markercode)]), lsl_backend.pylsl.local_clock(), True)
@@ -93,6 +96,7 @@ def send_marker(markercode):
     global river_backend
     if river_backend is not None:
         river_backend.send_marker(int(markercode))
+
 
 def shutdown_markers():
     global serial_port
