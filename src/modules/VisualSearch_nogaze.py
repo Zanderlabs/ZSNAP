@@ -19,13 +19,13 @@ Changelog
 """
 
 from direct.gui.DirectGui import DirectEntry
-from framework.latentmodule import LatentModule
+from framework import LatentModule
 from panda3d.core import TextProperties, TextPropertiesManager
 from random import choice, random, sample, shuffle, uniform
 from time import time
 from os import listdir
 from math import floor
-from pylslx import StreamInlet, resolve_stream
+from pylsl import StreamInlet, resolve_stream
 from collections import deque
 from PIL import Image
 import numpy as np
@@ -33,6 +33,9 @@ import pandas as pd
 
 
 # from pylsl import StreamInfo, StreamOutlet,
+
+
+global base
 
 
 def simple_almost_equal(a, b, dec=3):
@@ -107,7 +110,7 @@ class Main(LatentModule):
         self.crossScale = 0.15  # size of the crosshair
 
         self.circle_file = "./media/circle.png"
-        #self.circleTime = [0.5, 0.9]  # duration range in seconds that the crosshair is visible before each block
+        # self.circleTime = [0.5, 0.9]  # duration range in seconds that the crosshair is visible before each block
         self.circleScale = 0.05  # size of the circle
         self.circleColour = (.5, .5, .5, 1)  # colour of the crosshair
         self.margin = 0.8
@@ -330,6 +333,7 @@ class Main(LatentModule):
         # first resolve GAZE streams on the lab network
         print("looking for a GAZE stream...")
         streams = resolve_stream('type', 'Gaze')
+        print(f"Found {len(streams)}, connect to {streams[0].name()} of type {streams[0].type()}...")
 
         # create a new inlet to read from the stream
         inlet = StreamInlet(streams[0])
@@ -367,7 +371,7 @@ class Main(LatentModule):
                 duration="enter")
 
             # creating main log file, writing variable names
-            openTime = str(long(time() * 1000))
+            openTime = str(int(time() * 1000))
             self.logFile = "./logs/" + self.moduleName + "-" + openTime + "-" + self.subject + ".csv"
             logfile = open(self.logFile, "w")
             logfile.write('"subject";"timestamp";"block";"trial";"stimulusfile"')
@@ -389,7 +393,7 @@ class Main(LatentModule):
             self.waldoimages = listdir(self.waldoimagepath)  # read available images
             shuffle(self.waldoimages)  # shuffle images inplace
 
-            #truncate file list 
+            # truncate file list
             self.waldoimages = self.waldoimages[0:self.trials]
             
             ntrialperblock = int(floor(len(self.waldoimages) / self.blocks))  # number of images in a block
@@ -489,12 +493,12 @@ class Main(LatentModule):
                 self.cursorPos = (0, 0, 0)
                 
             self.write(
-            text="\1text\1" + self.textRecalibrate, 
-            font=self.fontFace,
-            scale=self.textScale,
-            fg=self.textColour,
-            bg=self.textBgColour,
-            duration='space')     
+                text="\1text\1" + self.textRecalibrate,
+                font=self.fontFace,
+                scale=self.textScale,
+                fg=self.textColour,
+                bg=self.textBgColour,
+                duration='space')
 
         """ end main loop """
         # end of experiment
