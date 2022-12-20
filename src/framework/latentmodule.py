@@ -482,6 +482,6 @@ class LatentModule(TickModule, BasicStimuli):
         Internal event handler for watchfor(_multiple).
         """
         self._received_dict[eventid].append(time.time() - self._measuretime)
-        idx = [i for i, x in enumerate(self._received_dict.iterkeys()) if x == eventid]
+        idx = [i for i, x in enumerate(self._received_dict.keys()) if x == eventid]
         self.marker(230 + idx[0])
         self._events_received.append(eventid)
