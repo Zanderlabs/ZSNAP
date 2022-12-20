@@ -194,7 +194,7 @@ class LatentModule(TickModule, BasicStimuli):
 
         # wrap up results
         if len(self._times_received) > 0:
-            return (self._events_received[0], self._times_received[0])
+            return self._events_received[0], self._times_received[0]
         else:
             return None
 
@@ -332,7 +332,7 @@ class LatentModule(TickModule, BasicStimuli):
         """
         try:
             shared_lock.acquire()
-            # framework.tickmodule.engine_lock.acquire()
+            # engine_lock.acquire()
             if self._thread is None:
                 # create the runner thread and launch it
                 self._thread = threading.Thread(target=self._run_wrap)
