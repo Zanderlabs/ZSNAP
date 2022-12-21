@@ -1,6 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import print_function
+from collections import deque
+from math import floor
+from os import listdir
+from random import random, shuffle, uniform
+from time import time
+
+import numpy as np
+import pandas as pd
+from PIL import Image
+from direct.gui.DirectGui import DirectEntry
+from framework import LatentModule
+from panda3d.core import TextProperties, TextPropertiesManager
+from pylsl import StreamInlet, resolve_stream
 
 """
 @authors    TSE, AGC, NVJ
@@ -18,21 +30,7 @@ Changelog
 2022-08-25 first version  - edited from VisIntOdd by lrk
 """
 
-from direct.gui.DirectGui import DirectEntry
-from framework.latentmodule import LatentModule
-from panda3d.core import TextProperties, TextPropertiesManager
-from random import choice, random, sample, shuffle, uniform
-from time import time
-from os import listdir
-from math import floor
-from pylslx import StreamInlet, resolve_stream
-from collections import deque
-from PIL import Image
-import numpy as np
-import pandas as pd
-
-
-# from pylsl import StreamInfo, StreamOutlet,
+global base
 
 
 def simple_almost_equal(a, b, dec=3):
@@ -367,7 +365,7 @@ class Main(LatentModule):
                 duration="enter")
 
             # creating main log file, writing variable names
-            openTime = str(long(time() * 1000))
+            openTime = str(int(time() * 1000))
             self.logFile = "./logs/" + self.moduleName + "-" + openTime + "-" + self.subject + ".csv"
             logfile = open(self.logFile, "w")
             logfile.write('"subject";"timestamp";"block";"trial";"stimulusfile"')
@@ -489,12 +487,12 @@ class Main(LatentModule):
                 self.cursorPos = (0, 0, 0)
                 
             self.write(
-            text="\1text\1" + self.textRecalibrate, 
-            font=self.fontFace,
-            scale=self.textScale,
-            fg=self.textColour,
-            bg=self.textBgColour,
-            duration='space')    
+                text="\1text\1" + self.textRecalibrate,
+                font=self.fontFace,
+                scale=self.textScale,
+                fg=self.textColour,
+                bg=self.textBgColour,
+                duration='space')
 
         """ end main loop """
         # end of experiment
