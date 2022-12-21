@@ -328,7 +328,7 @@ class MainApp(ShowBase):
                 self.load_module(opts.module)
 
         # start the module if desired
-        if (opts.autolaunch == True) or (opts.autolaunch == '1'):
+        if opts.autolaunch or (opts.autolaunch == '1'):
             self.start_module()
 
         # start the TCP server for remote control
@@ -511,7 +511,7 @@ class MainApp(ShowBase):
 
         shared_lock.acquire()
         # engine_lock.acquire()
-        return Task.cont
+        return task.cont
 
     def terminate(self):
         exit()
@@ -522,9 +522,12 @@ class MainApp(ShowBase):
 # ----------------------
 # --- SNAP Main Loop ---
 # ----------------------
-
 try:
     app = MainApp(opts)
+    # shared_lock.acquire()
+    # app.run()
+    # shared_lock.release()
+
     while is_running:
         shared_lock.acquire()
         # engine_lock.acquire()
@@ -538,6 +541,5 @@ except Exception as e:
 # --------------------------------
 # --- Finalization and cleanup ---
 # --------------------------------
-
 print('Terminating launcher...')
 shutdown_markers()
