@@ -1,11 +1,11 @@
 # This file contains the settings for the Panda3d engine that are loaded by default unless configured otherwise.
 # See http://www.panda3d.org/manual/index.php/List_of_All_Config_Variables for a complete list.
 
-#win-origin 0 0
-win-origin 1920 0
+win-origin 0 0
+#win-origin 1920 0
 #win-origin 1120 50
-#win-size 800 600
 win-size 1920 1080
+# win-size 1920 1200
 # win-size 1080 1080
 # win-size 2560 1080
 fullscreen #f
