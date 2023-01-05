@@ -44,8 +44,6 @@ The SNAP experiment launcher program. To be run on the subject's PC.
     but note that you cannot check these changes back into the main source repository of SNAP.
     
 """
-# from __future__ import with_statement
-
 import fnmatch
 import optparse
 import os
@@ -345,7 +343,8 @@ class MainApp(ShowBase):
         self.win.requestProperties(winprops)
 
     def load_module(self, name):
-        """Try to load the given module, if any. The module can be in any folder under modules."""
+        """Try to load the given module, if any.
+        The module can be in any folder under modules."""
         if name is not None and len(name) > 0:
             print('Importing experiment module "' + name + '"...')
             # find it under modules...
@@ -364,7 +363,7 @@ class MainApp(ShowBase):
                     self._module = __import__(name)
                     print('done.')
                     # instantiate the main class 
-                    print("Instantiating the module's Main class...", )
+                    print("Instantiating the module's Main class...")
                     self._instance = self._module.Main()
                     self._instance._make_up_for_lost_time = self._opts.timecompensation
                     self._instance._oscclient = oscclient
@@ -395,7 +394,7 @@ class MainApp(ShowBase):
             else:
                 with open(file, 'r') as f:
                     self.load_module(f.readline().strip())
-                    print('Now setting variables...', )
+                    print('Now setting variables...')
                     for line in f.readlines():
                         exec(line in self._instance.__dict__)
                     print('done; config is loaded.')
@@ -408,7 +407,7 @@ class MainApp(ShowBase):
     def start_module(self):
         if self._instance is not None:
             self.cancel_module()
-            print('Starting module execution...', )
+            print('Starting module execution...')
             self._instance.start()
             print('done.')
             self._executing = True
@@ -416,7 +415,7 @@ class MainApp(ShowBase):
     # cancel executing the currently loaded module (may be started again later)
     def cancel_module(self):
         if (self._instance is not None) and self._executing:
-            print('Canceling module execution...', )
+            print('Canceling module execution...')
             self._instance.cancel()
             print('done.')
         self._executing = False
@@ -424,7 +423,7 @@ class MainApp(ShowBase):
     # prune a currently loaded module's resources
     def prune_module(self):
         if self._instance is not None:
-            print("Pruning current module's resources...", )
+            print("Pruning current module's resources...")
             try:
                 self._instance.prune()
             except Exception as inst:
@@ -453,7 +452,7 @@ class MainApp(ShowBase):
         class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
             pass
 
-        print("Bringing up remote-control server on port", port, "...", )
+        print("Bringing up remote-control server on port", port, "...")
         try:
             server = ThreadedTCPServer(("", port), ThreadedTCPRequestHandler)
             server_thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -467,7 +466,7 @@ class MainApp(ShowBase):
         """Initialize a pull-down console. Note that this console is a bit glitchy -- use at your own risk."""
         if self._console is None:
             try:
-                print("Initializing console...", )
+                print("Initializing console...")
                 from framework.console.interactiveConsole import pandaConsole, INPUT_CONSOLE, INPUT_GUI, OUTPUT_PYTHON
                 self._console = pandaConsole(INPUT_CONSOLE | INPUT_GUI | OUTPUT_PYTHON, self._instance.__dict__)
                 print("done.")
