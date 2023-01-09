@@ -87,7 +87,7 @@ AUTO_LAUNCH = True
 STUDYPATH = "studies/SampleStudy"
 
 # The default engine configuration.
-ENGINE_CONFIG = "defaultsettings.prc"
+ENGINE_CONFIG = "engine_default_settings.prc"
 
 # Set this to True or False to override the settings in the engineconfig file (.prc)
 FULLSCREEN = None
