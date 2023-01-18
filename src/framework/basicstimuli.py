@@ -634,6 +634,12 @@ class BasicStimuli:
             return
         return self._engine.base.loader.loadTexture(filename)
 
+    def precache_font(self, filename):
+        """Pre-cache a font file."""
+        if filename is None:
+            return
+        return self._engine.base.loader.loadFont(filename)
+
     def precache_model(self, filename):
         """Pre-cache a model file."""
         if filename is None:
