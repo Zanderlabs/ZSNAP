@@ -344,45 +344,55 @@ class MainApp(ShowBase):
 
     def load_module(self, name):
         """Try to load the given module, if any.
-        The module can be in any folder under modules."""
-        if name is not None and len(name) > 0:
-            print('Importing experiment module "' + name + '"...')
-            # find it under modules...
-            locations = []
-            for root, dirnames, filenames in os.walk('modules'):
-                for filename in fnmatch.filter(filenames, name + '.py'):
-                    locations.append(root)
-            if len(locations) == 1:
-                if self._instance is not None:
-                    self.prune_module()
-                self.set_defaults()
-                if locations[0] not in sys.path:
-                    sys.path.insert(0, locations[0])
-                try:
-                    # import it
-                    self._module = __import__(name)
-                    print('done.')
-                    # instantiate the main class 
-                    print("Instantiating the module's Main class...")
-                    self._instance = self._module.Main()
-                    self._instance._make_up_for_lost_time = self._opts.timecompensation
-                    self._instance._oscclient = oscclient
-                    print('done.')
-                except ImportError as e:
-                    print(
-                        "The experiment module '" + name +
-                        "' could not be imported correctly. "
-                        "Make sure that its own imports are properly found by Python; reason:")
-                    print(e)
-                    traceback.print_exc()
+        The module should be somewhere on the PYTHONPATH or
+        in any (sub-)folder under the local 'modules' folder."""
 
-            elif len(locations) == 0:
-                print("The module named '" + name + "' was not found in the modules folder or any of its sub-folders.")
-            else:
-                print(
-                        "The module named '" + name +
-                        "' was found in multiple sub-folders of the modules folder; "
-                        "make sure that you are not using a duplicate name.")
+        if name is not None and len(name) > 0:
+            print(f'Importing experiment module "{name}"... ', end="\r")
+            if self._instance is not None:
+                self.prune_module()
+            self.set_defaults()
+
+            # try importing the module from the expected locations (e.g., site-packages)
+            try:
+                self._module = __import__(name)
+                print(f'done importing {self._module}')
+            except ModuleNotFoundError:
+                # add new search places and try again
+                locations = []
+                if os.path.exists("modules"):
+                    # find it under modules...
+                    print(f"Searching the module {name} locally in the 'modules' folder... ", end="\r")
+                    for root, _, filenames in os.walk('modules'):
+                        if len(fnmatch.filter(filenames, name + '.py')) >= 1:
+                            locations.append(root)
+                        if len(fnmatch.filter(filenames, name + '.pyc')) >= 1:
+                            locations.append(root)
+                        if len(fnmatch.filter(filenames, name)) >= 1:
+                            locations.append(root)
+
+                    # Add these paths to the search path
+                    for loc in locations:
+                        if loc not in sys.path:
+                            sys.path.insert(0, loc)
+                try:
+                    self._module = __import__(name)
+                    print(f'done importing {self._module}')
+                except ModuleNotFoundError as err:
+                    print(f"The module named '{name}' could not be found.")
+                    raise err
+                except ImportError as err:
+                    print(f"The experiment module '{name}' could not be imported correctly. "
+                          f"Make sure that its own imports are properly found by Python;"
+                          f"\n reason: {err}")
+                    traceback.print_exc()
+                    raise err
+
+            print("Instantiating the module's Main class...")
+            self._instance = self._module.Main()
+            self._instance._make_up_for_lost_time = self._opts.timecompensation
+            self._instance._oscclient = oscclient
+            print('done.')
 
     def load_config(self, name):
         """Try to load a study config file (see studies directory)."""
@@ -398,9 +408,9 @@ class MainApp(ShowBase):
                     for line in f.readlines():
                         exec(line in self._instance.__dict__)
                     print('done; config is loaded.')
-        except Exception as e:
+        except Exception as err:
             print('Error while loading the study config file "' + file + '".')
-            print(e)
+            print(err)
             traceback.print_exc()
 
     # start executing the currently loaded module
