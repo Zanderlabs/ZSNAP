@@ -396,20 +396,26 @@ class MainApp(ShowBase):
 
     def load_config(self, name):
         """Try to load a study config file (see studies directory)."""
-        print('Attempting to load config "' + name + '"...')
-        file = os.path.join(self._opts.studypath, name)
+        print(f'Attempting to load config "{name}"...')
         try:
-            if not os.path.exists(file):
-                print('file "' + file + '" not found.')
+            if os.path.exists(name):
+                file = name
+            elif os.path.exists(os.path.join(self._opts.studypath, name)):
+                file = os.path.join(self._opts.studypath, name)
             else:
-                with open(file, 'r') as f:
-                    self.load_module(f.readline().strip())
-                    print('Now setting variables...')
-                    for line in f.readlines():
-                        exec(line, self._instance.__dict__)
-                    print('done; config is loaded.')
+                print(f'The file "{name}" was not found locally nor in the {self._opts.studypath}.')
+                return
+
+            with open(file, 'r') as f:
+                # The module name is expected to be on the first line
+                self.load_module(f.readline().strip())
+
+                print('Now setting variables...')
+                for line in f.readlines():
+                    exec(line, self._instance.__dict__)
+                print('done; config is loaded.')
         except Exception as err:
-            print('Error while loading the study config file "' + file + '".')
+            print(f'Error while loading the study config file "{name}".')
             print(err)
             traceback.print_exc()
 
