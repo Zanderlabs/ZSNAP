@@ -406,7 +406,7 @@ class MainApp(ShowBase):
                     self.load_module(f.readline().strip())
                     print('Now setting variables...')
                     for line in f.readlines():
-                        exec(line in self._instance.__dict__)
+                        exec(line, self._instance.__dict__)
                     print('done; config is loaded.')
         except Exception as err:
             print('Error while loading the study config file "' + file + '".')
@@ -503,7 +503,7 @@ class MainApp(ShowBase):
                     self.load_module(cmd[5:])
                 elif cmd.startswith("setup "):
                     try:
-                        exec(cmd[6:] in self._instance.__dict__)
+                        exec(cmd[6:], self._instance.__dict__)
                     except:
                         pass
                 elif cmd.startswith("config "):
