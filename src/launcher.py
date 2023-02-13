@@ -12,21 +12,21 @@ The SNAP experiment launcher program. To be run on the subject's PC.
   launcher.py --module Sample1 --studypath studies/Sample1 --autolaunch 1 --developer 1 \\
   --engineconfig defaultsettings.prc --datariver 0 --labstreaming 1 --fullscreen 0 --windowsize 800x600 \\
   --windoworigin 50/50 --noborder 0 --nomousecursor 0 --timecompensation 1
-    
+
 * If in developer mode, several key bindings are enabled:
    Esc: exit program
    F1: start module
    F2: cancel module
-  
+
 * In addition to modules, there are "study configuration files" (aka study configs),
   which are in in the studies directory. These specify the module to launch in the first line
   and assignments to member variables of the module instance in the remaining lines (all Python syntax allowed).
-  
+
   A config can be specified in the command line just by passing the appropriate .cfg file name,
   as in the following example.
   In addition, the directory where to look for the .cfg file can be specified as the studypath.
   launcher.py --module=test1.cfg --studypath=studies/DAS
-  
+
 * The program can be remote-controlled via a simple TCP text-format network protocol (on port 7899) supporting
     the following messages:
   start                  --> start the current module
@@ -36,13 +36,13 @@ The SNAP experiment launcher program. To be run on the subject's PC.
                                                     (make sure that the studypath is set correctly so that it's found)
   setup name=value       --> assign a value to a member variable in the current module instance
                              can also involve multiple assignments separated by semicolons, full Python syntax allowed.
-   
+
 * The underlying Panda3d engine can be configured via a custom .prc file (specified as --engineconfig=filename.prc), see
   http://www.panda3d.org/manual/index.php/Configuring_Panda3D
-  
+
 * For quick-and-dirty testing you may also override the launch options below under "Default Launcher Configuration",
     but note that you cannot check these changes back into the main source repository of SNAP.
-    
+
 """
 import fnmatch
 import optparse
@@ -79,7 +79,7 @@ SNAP_VERSION = '1.02'
 LOAD_MODULE = "Sample1"
 
 # If true, the selected module will be launched automatically; otherwise it will
-# only be (pre-)loaded; the user needs to press F1 (or issue the "start" command remotely) to start the module 
+# only be (pre-)loaded; the user needs to press F1 (or issue the "start" command remotely) to start the module
 AUTO_LAUNCH = True
 
 # The directory in which to look for .cfg files, if passed as module or via
@@ -111,12 +111,12 @@ DATA_RIVER = False
 # Enable lab streaming layer support for marker sending.
 LAB_STREAMING = True
 
-# This is the default port on which the launcher listens for remote control 
+# This is the default port on which the launcher listens for remote control
 # commands (e.g. launching an experiment module)
 SERVER_PORT = 7897
 
 # Whether the Launcher starts in developer mode; if true, modules can be loaded,
-# started and cancelled via keyboard shortcuts (not recommended for production 
+# started and cancelled via keyboard shortcuts (not recommended for production
 # experiments)
 DEVELOPER_MODE = True
 
@@ -214,6 +214,7 @@ loadPrcFile(config_searchpath.findFile(Filename.fromOsSpecific(opts.engineconfig
 loadPrcFileData('', 'model-path ' + opts.studypath + '/media')
 loadPrcFileData('', 'model-path ' + opts.studypath)
 loadPrcFileData('', 'model-path media')
+loadPrcFileData('', 'model-path ' + os.path.abspath(os.path.dirname(__file__)) + '/media')
 
 # override engine settings according to the command line arguments, if specified
 if opts.fullscreen is not None:
