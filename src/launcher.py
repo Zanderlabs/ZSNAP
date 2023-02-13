@@ -214,6 +214,7 @@ loadPrcFile(config_searchpath.findFile(Filename.fromOsSpecific(opts.engineconfig
 loadPrcFileData('', 'model-path ' + opts.studypath + '/media')
 loadPrcFileData('', 'model-path ' + opts.studypath)
 loadPrcFileData('', 'model-path media')
+loadPrcFileData('', 'model-path ' + os.path.abspath(os.path.dirname(__file__)) + '/media')
 
 # override engine settings according to the command line arguments, if specified
 if opts.fullscreen is not None:
