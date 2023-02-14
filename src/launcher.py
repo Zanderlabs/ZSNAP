@@ -393,6 +393,8 @@ class MainApp(ShowBase):
             self._instance = self._module.Main()
             self._instance._make_up_for_lost_time = self._opts.timecompensation
             self._instance._oscclient = oscclient
+            # add the local module folder to the search path for media files
+            loadPrcFileData('', 'model-path ' + os.path.abspath(os.path.dirname(self._module.__file__)) + '/media')
             print('done.')
 
     def load_config(self, name):
