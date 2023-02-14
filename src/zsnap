@@ -9,7 +9,7 @@ The SNAP experiment launcher program. To be run on the subject's PC.
 
 * The module to be launched (and various other options) can be specified at the command line;
     here is a complete listing of all possible config options and their defaults:
-  launcher.py --module Sample1 --studypath studies/Sample1 --autolaunch 1 --developer 1 \\
+  zsnap --module Sample1 --studypath studies/Sample1 --autolaunch 1 --developer 1 \\
   --engineconfig defaultsettings.prc --datariver 0 --labstreaming 1 --fullscreen 0 --windowsize 800x600 \\
   --windoworigin 50/50 --noborder 0 --nomousecursor 0 --timecompensation 1
 
@@ -25,7 +25,7 @@ The SNAP experiment launcher program. To be run on the subject's PC.
   A config can be specified in the command line just by passing the appropriate .cfg file name,
   as in the following example.
   In addition, the directory where to look for the .cfg file can be specified as the studypath.
-  launcher.py --module=test1.cfg --studypath=studies/DAS
+  zsnap --module=test1.cfg --studypath=studies/DAS
 
 * The program can be remote-controlled via a simple TCP text-format network protocol (on port 7899) supporting
     the following messages:
